@@ -3,6 +3,7 @@ import { DM_Sans, DM_Mono } from 'next/font/google'
 import './globals.css'
 import './landing.css'
 import './login.css'
+import './app.css'
 import { Providers } from './providers'
 
 const dmSans = DM_Sans({

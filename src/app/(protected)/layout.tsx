@@ -15,10 +15,10 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-dm-sans, DM Sans, sans-serif)', background: 'var(--bg-primary)', display: 'flex', minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: 'var(--font-dm-sans, DM Sans, sans-serif)', display: 'flex', minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
       <Sidebar user={session.user} />
       <MobileNav />
-      <main style={{ marginLeft: 'var(--sidebar-width)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: '72px' }}>
+      <main className="main-content">
         {children}
       </main>
     </div>
