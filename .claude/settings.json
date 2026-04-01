@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat src/app/\\\\\\(protected\\\\\\)/links/compare/page.tsx)",
+      "Bash(cat src/app/\\\\\\(protected\\\\\\)/settings/api-keys/page.tsx)",
+      "Bash(cat src/app/\\\\\\(protected\\\\\\)/settings/domains/page.tsx)"
+    ]
+  }
+}

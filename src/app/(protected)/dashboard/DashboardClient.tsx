@@ -121,7 +121,7 @@ export function DashboardClient({
         </div>
 
         {/* CHART + GEO */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '14px', marginBottom: '24px' }}>
+        <div className="dash-chart-grid">
           {/* Clicks Chart */}
           <div className="analytics-chart-card">
             <div style={{ marginBottom: '18px' }}>
@@ -166,7 +166,7 @@ export function DashboardClient({
         </div>
 
         {/* DEVICE + RECENT LINKS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px' }}>
+        <div className="dash-device-grid">
           {/* Devices */}
           <div className="analytics-breakdown">
             <div className="analytics-breakdown-title">Por dispositivo</div>

@@ -46,10 +46,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(protected)/settings/page.js"
     ],
-    "/_not-found/page": [
+    "/(protected)/settings/domains/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/(protected)/settings/domains/page.js"
+    ],
+    "/(protected)/settings/api-keys/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(protected)/settings/api-keys/page.js"
     ]
   }
 }

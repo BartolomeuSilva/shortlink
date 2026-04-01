@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { MobileNav } from '@/components/layout/MobileNav'
+import { prisma } from '@/lib/db'
+import { LayoutShell } from '@/components/layout/LayoutShell'
 
 export default async function ProtectedLayout({
   children,
@@ -10,17 +10,25 @@ export default async function ProtectedLayout({
 }) {
   const session = await auth()
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login')
   }
 
+  // Buscar direto do banco para sempre ter nome e foto atualizados
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true, email: true, image: true },
+  })
+
+  const user = {
+    name: dbUser?.name ?? session.user.name,
+    email: dbUser?.email ?? session.user.email,
+    image: dbUser?.image ?? session.user.image,
+  }
+
   return (
-    <div style={{ fontFamily: 'var(--font-dm-sans, DM Sans, sans-serif)', display: 'flex', minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
-      <Sidebar user={session.user} />
-      <MobileNav />
-      <main className="main-content">
-        {children}
-      </main>
-    </div>
+    <LayoutShell user={user}>
+      {children}
+    </LayoutShell>
   )
 }

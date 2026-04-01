@@ -129,7 +129,7 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
   return (
     <>
       {/* TOOLBAR */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }} className="links-toolbar">
         <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" stroke="var(--text-tertiary)" strokeWidth="1.5" fill="none"
             style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
@@ -201,8 +201,69 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
         <span><strong style={{ color: 'var(--text-primary)' }}>{formatNumber(links.reduce((s, l) => s + l.clickCount, 0))}</strong> cliques totais</span>
       </div>
 
-      {/* TABLE */}
-      <div style={{ background: 'var(--bg-secondary)', border: '0.5px solid rgba(0,0,0,0.07)', borderRadius: '16px', overflow: 'hidden' }}>
+      {/* MOBILE CARDS */}
+      <div className="link-cards-mobile">
+        {filtered.length === 0 ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+            {search || statusFilter !== 'all' ? 'Nenhum link encontrado com esses filtros.' : 'Nenhum link criado ainda.'}
+          </div>
+        ) : filtered.map((link) => {
+          const status = getStatus(link)
+          const statusStyle = status === 'active'
+            ? { background: '#EAF3DE', color: '#27500A' }
+            : status === 'expired'
+            ? { background: '#FAEEDA', color: '#854F0B' }
+            : { background: '#EEEDE9', color: 'var(--text-secondary)' }
+          const dotColor = status === 'active' ? '#3B6D11' : status === 'expired' ? '#854F0B' : 'var(--text-tertiary)'
+
+          return (
+            <div key={link.id} className="link-mobile-card">
+              <div className="link-mc-header">
+                <div className="link-mc-icon">🔗</div>
+                <div className="link-mc-info">
+                  <div className="link-mc-short">{baseUrl}/{link.shortCode}</div>
+                  <div className="link-mc-orig">{link.title || link.originalUrl}</div>
+                </div>
+                <span style={{ ...statusStyle, display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 500, padding: '3px 9px', borderRadius: '99px', flexShrink: 0 }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: dotColor, display: 'inline-block' }} />
+                  {status === 'active' ? 'Ativo' : status === 'expired' ? 'Expirado' : 'Inativo'}
+                </span>
+              </div>
+              <div className="link-mc-meta">
+                <span className="link-mc-clicks">{formatNumber(link.clickCount)} cliques</span>
+                <span>{formatDistanceToNow(parseISO(link.createdAt), { addSuffix: true, locale: ptBR })}</span>
+              </div>
+              <div className="link-mc-actions">
+                <button onClick={() => copyLink(link.shortCode, link.id)} className="link-mc-btn" title="Copiar link">
+                  {copiedId === link.id ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none"><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                  )}
+                </button>
+                <Link href={`/links/${link.id}`} className="link-mc-btn" title="Analytics">
+                  <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
+                </Link>
+                <button onClick={() => downloadQR(link.id, link.shortCode)} className="link-mc-btn" title="Baixar QR Code">
+                  <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><path d="M14 14h3v3h-3zM17 17h3v3h-3z" /></svg>
+                </button>
+                <label className="link-mc-btn" title={link.isActive ? 'Desativar' : 'Ativar'} style={{ cursor: 'pointer' }}>
+                  <input type="checkbox" checked={link.isActive} onChange={() => toggleActive(link.id, link.isActive)} style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
+                  <span style={{ display: 'inline-block', width: '30px', height: '17px', position: 'relative', background: link.isActive ? 'var(--primary)' : 'var(--border-secondary)', borderRadius: '99px', transition: 'background 0.2s' }}>
+                    <span style={{ position: 'absolute', width: '13px', height: '13px', left: link.isActive ? '15px' : '2px', top: '2px', background: 'white', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                  </span>
+                </label>
+                <button onClick={() => deleteLink(link.id)} disabled={deletingId === link.id} className="link-mc-btn" style={{ color: 'var(--color-error)' }} title="Excluir">
+                  <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" /></svg>
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* TABLE (desktop) */}
+      <div className="link-table-desktop" style={{ background: 'var(--bg-secondary)', border: '0.5px solid rgba(0,0,0,0.07)', borderRadius: '16px', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -379,6 +440,14 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
           </div>
         </div>
       </div>
+
+      {/* FAB — mobile only */}
+      <button className="fab" onClick={() => setShowModal(true)} aria-label="Novo link">
+        <svg width="22" height="22" viewBox="0 0 24 24" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
 
       {showModal && <CreateLinkModal onClose={() => setShowModal(false)} onSuccess={refreshLinks} />}
     </>

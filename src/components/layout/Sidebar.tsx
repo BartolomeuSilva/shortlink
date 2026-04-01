@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOut } from 'next-auth/react'
-import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { ProfileModal } from '@/components/profile/ProfileModal'
 
 interface SidebarUser {
   name?: string | null
@@ -13,6 +13,11 @@ interface SidebarUser {
 
 interface SidebarProps {
   user: SidebarUser
+  isOpen?: boolean
+  collapsed?: boolean
+  onClose?: () => void
+  onToggleCollapse?: () => void
+  onProfileUpdate?: (patch: { name?: string; image?: string }) => void
 }
 
 const navItems = [
@@ -20,7 +25,7 @@ const navItems = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1" />
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -32,7 +37,7 @@ const navItems = [
     label: 'Meus Links',
     href: '/links',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
         <path d="M14.828 14.828a4 4 0 000-5.656l-4-4a4 4 0 10-5.656 5.656l1.1 1.1" />
       </svg>
@@ -42,7 +47,7 @@ const navItems = [
     label: 'QR Codes',
     href: '/qr',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" />
         <rect x="14" y="3" width="7" height="7" />
         <rect x="3" y="14" width="7" height="7" />
@@ -54,7 +59,7 @@ const navItems = [
     label: 'Comparar',
     href: '/links/compare',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" />
@@ -66,9 +71,9 @@ const navItems = [
 const settingsItems = [
   {
     label: 'Domínios',
-    href: '/settings?domain=1',
+    href: '/settings/domains',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <line x1="2" y1="12" x2="22" y2="12" />
         <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
@@ -79,7 +84,7 @@ const settingsItems = [
     label: 'Configurações',
     href: '/settings',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
       </svg>
@@ -87,31 +92,48 @@ const settingsItems = [
   },
   {
     label: 'API Keys',
-    href: '/settings?api=1',
+    href: '/settings/api-keys',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
       </svg>
     ),
   },
 ]
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, isOpen, collapsed, onClose, onToggleCollapse, onProfileUpdate }: SidebarProps) {
   const pathname = usePathname()
+  const [profileOpen, setProfileOpen] = useState(false)
 
-  const isActive = (href: string) => pathname === href || pathname === href + '/'
+  const isActive = (href: string) => pathname === href
 
   const initials = user.name
     ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : user.email?.[0]?.toUpperCase() || '?'
 
   return (
-    <aside className="sidebar">
-      {/* LOGO */}
-      <Link href="/dashboard" className="sidebar-logo">
-        <div className="sidebar-logo-icon">1</div>
-        <div className="sidebar-logo-text">123<span>bit</span></div>
-      </Link>
+    <>
+    <aside className={`sidebar ${isOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+      {/* LOGO + COLLAPSE TOGGLE */}
+      <div className="sidebar-logo-row">
+        <Link href="/dashboard" className="sidebar-logo" onClick={onClose}>
+          <div className="sidebar-logo-icon">1</div>
+          <div className="sidebar-logo-text">123<span>bit</span></div>
+        </Link>
+        <button
+          className="sidebar-collapse-btn"
+          onClick={onToggleCollapse}
+          title={collapsed ? 'Expandir' : 'Recolher'}
+        >
+          <svg
+            width="14" height="14" viewBox="0 0 24 24"
+            stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round"
+            style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+      </div>
 
       {/* NAV */}
       <nav className="sidebar-nav">
@@ -122,9 +144,11 @@ export function Sidebar({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={`sidebar-link ${active ? 'active' : ''}`}
+              title={collapsed ? item.label : undefined}
+              onClick={onClose}
             >
-              {item.icon}
-              {item.label}
+              <span className="sidebar-link-icon">{item.icon}</span>
+              <span className="sidebar-link-label">{item.label}</span>
             </Link>
           )
         })}
@@ -138,25 +162,22 @@ export function Sidebar({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={`sidebar-link ${active ? 'active' : ''}`}
+              title={collapsed ? item.label : undefined}
+              onClick={onClose}
             >
-              {item.icon}
-              {item.label}
+              <span className="sidebar-link-icon">{item.icon}</span>
+              <span className="sidebar-link-label">{item.label}</span>
             </Link>
           )
         })}
       </nav>
 
-      {/* THEME TOGGLE */}
-      <div className="sidebar-theme">
-        <ThemeToggle />
-      </div>
-
       {/* USER CARD */}
       <div className="sidebar-user">
         <div
           className="sidebar-user-card"
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          title="Sair"
+          onClick={() => setProfileOpen(true)}
+          title={collapsed ? (user.name || user.email || 'Perfil') : 'Ver perfil'}
         >
           <div className="sidebar-user-avatar">
             {user.image ? (
@@ -175,5 +196,14 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
       </div>
     </aside>
+
+    {profileOpen && (
+      <ProfileModal
+        user={user}
+        onClose={() => setProfileOpen(false)}
+        onProfileUpdate={onProfileUpdate}
+      />
+    )}
+  </>
   )
 }

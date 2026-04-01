@@ -90,6 +90,15 @@ export default function LoginPage() {
       {/* RIGHT */}
       <div className="lp-right">
         <div className="lp-form-wrap">
+          {/* Mobile-only header with logo */}
+          <div className="lp-mobile-header">
+            <Link href="/" className="lp-logo">
+              <div className="lp-logo-icon" />
+              123<span>bit</span>.app
+            </Link>
+            <ThemeToggle />
+          </div>
+
           <h1>{tab === 'login' ? 'Bem-vindo de volta' : 'Criar conta'}</h1>
           <p>{tab === 'login' ? 'Entre na sua conta para continuar.' : 'Comece gratuitamente, sem cartão de crédito.'}</p>
 

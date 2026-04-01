@@ -1,355 +1,99 @@
-'use client'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { redirect } from 'next/navigation'
 
-import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+export default async function SettingsPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
 
-interface Domain {
-  id: string
-  domain: string
-  verified: boolean
-  txtRecord: string | null
-  createdAt: string
-}
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      email: true,
+      image: true,
+      plan: true,
+      createdAt: true,
+      _count: { select: { links: true } },
+    },
+  })
 
-interface ApiKeyItem {
-  id: string
-  name: string
-  lastUsedAt: string | null
-  expiresAt: string | null
-  revokedAt: string | null
-  createdAt: string
-}
+  if (!user) redirect('/login')
 
-export default function SettingsPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState('general')
-  const [domains, setDomains] = useState<Domain[]>([])
-  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [newDomain, setNewDomain] = useState('')
-  const [newKeyName, setNewKeyName] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login')
-    } else if (status === 'authenticated') {
-      const tab = searchParams.get('domain') ? 'domains' : (searchParams.get('api') ? 'api-keys' : 'general')
-      setActiveTab(tab)
-      loadData(tab)
-    }
-  }, [status, router, searchParams])
-
-  const loadData = async (tab: string) => {
-    setLoading(true)
-    try {
-      if (tab === 'domains') {
-        const res = await fetch('/api/domains')
-        if (res.ok) {
-          const data = await res.json()
-          setDomains(data.domains || [])
-        }
-      } else if (tab === 'api-keys') {
-        const res = await fetch('/api/keys')
-        if (res.ok) {
-          const data = await res.json()
-          setApiKeys(data.keys || [])
-        }
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddDomain = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
-
-    try {
-      const res = await fetch('/api/domains', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: newDomain }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Erro ao adicionar domínio')
-        return
-      }
-
-      setSuccess(data.message || 'Domínio adicionado')
-      setNewDomain('')
-      loadData('domains')
-    } catch (e) {
-      setError('Erro ao adicionar domínio')
-    }
-  }
-
-  const handleDeleteDomain = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover este domínio?')) return
-
-    try {
-      const res = await fetch(`/api/domains/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        loadData('domains')
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  const handleCreateApiKey = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
-    try {
-      const res = await fetch('/api/keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newKeyName }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Erro ao criar API Key')
-        return
-      }
-
-      setSuccess(`API Key criada: ${data.key}`)
-      setNewKeyName('')
-      loadData('api-keys')
-    } catch (e) {
-      setError('Erro ao criar API Key')
-    }
-  }
-
-  const handleRevokeApiKey = async (id: string) => {
-    if (!confirm('Tem certeza que deseja revogar esta API Key?')) return
-
-    try {
-      const res = await fetch(`/api/keys/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        loadData('api-keys')
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setSuccess('Copiado para a área de transferência!')
-    setTimeout(() => setSuccess(''), 2000)
-  }
-
-  if (status === 'loading' || loading) {
-    return (
-      <div style={{ padding: '24px' }}>
-        <p style={{ color: 'var(--text-tertiary)' }}>Carregando...</p>
-      </div>
-    )
-  }
+  const memberSince = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(user.createdAt)
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>Configurações</h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>Gerencie suas configurações</p>
-      </div>
-
-      {error && (
-        <div style={{ background: 'var(--color-error-bg)', padding: '12px', borderRadius: '8px', marginBottom: '16px', color: 'var(--color-error)', fontSize: '13px' }}>
-          {error}
-        </div>
-      )}
-      {success && (
-        <div style={{ background: 'var(--color-success-bg)', padding: '12px', borderRadius: '8px', marginBottom: '16px', color: 'var(--color-success)', fontSize: '13px' }}>
-          {success}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: '24px' }}>
-        <div style={{ width: '220px', background: 'var(--bg-secondary)', borderRadius: '12px', padding: '8px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-          <a
-            href="/settings"
-            style={{
-              display: 'block', padding: '10px 14px', borderRadius: '8px',
-              fontSize: '13px', color: activeTab === 'general' ? 'var(--primary)' : 'var(--text-secondary)',
-              background: activeTab === 'general' ? 'var(--bg-hover)' : 'transparent',
-              textDecoration: 'none', fontWeight: 400,
-            }}
-          >
-            Geral
-          </a>
-          <a
-            href="/settings?domain=1"
-            style={{
-              display: 'block', padding: '10px 14px', borderRadius: '8px',
-              fontSize: '13px', color: activeTab === 'domains' ? 'var(--primary)' : 'var(--text-secondary)',
-              background: activeTab === 'domains' ? 'var(--bg-hover)' : 'transparent',
-              textDecoration: 'none', fontWeight: 400,
-            }}
-          >
-            Domínios
-          </a>
-          <a
-            href="/settings?api=1"
-            style={{
-              display: 'block', padding: '10px 14px', borderRadius: '8px',
-              fontSize: '13px', color: activeTab === 'api-keys' ? 'var(--primary)' : 'var(--text-secondary)',
-              background: activeTab === 'api-keys' ? 'var(--bg-hover)' : 'transparent',
-              textDecoration: 'none', fontWeight: 400,
-            }}
-          >
-            API Keys
-          </a>
-        </div>
-
-        <div style={{ flex: 1, background: 'var(--bg-secondary)', borderRadius: '12px', padding: '24px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-          {activeTab === 'general' && (
-            <div>
-              <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Configurações Gerais</h2>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>Nome</label>
-                <input
-                  type="text"
-                  defaultValue={session?.user?.name || ''}
-                  style={{ width: '100%', maxWidth: '400px', padding: '10px 12px', fontSize: '14px', border: '1px solid var(--border-secondary)', borderRadius: '8px' }}
-                  disabled
-                />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>Email</label>
-                <input
-                  type="email"
-                  defaultValue={session?.user?.email || ''}
-                  style={{ width: '100%', maxWidth: '400px', padding: '10px 12px', fontSize: '14px', border: '1px solid var(--border-secondary)', borderRadius: '8px' }}
-                  disabled
-                />
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Para alterar informações da conta, use o painel do NextAuth.</p>
-            </div>
-          )}
-
-          {activeTab === 'domains' && (
-            <div>
-              <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Domínios Personalizados</h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>
-                Configure domínios personalizados para seus links curtos.
-              </p>
-
-              <form onSubmit={handleAddDomain} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-                <input
-                  type="text"
-                  value={newDomain}
-                  onChange={(e) => setNewDomain(e.target.value)}
-                  placeholder="exemplo.com"
-                  style={{ flex: 1, padding: '10px 12px', fontSize: '14px', border: '1px solid var(--border-secondary)', borderRadius: '8px' }}
-                />
-                <button
-                  type="submit"
-                  style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 500, color: 'var(--bg-secondary)', background: 'var(--primary)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                >
-                  Adicionar
-                </button>
-              </form>
-
-              {domains.length === 0 ? (
-                <div style={{ padding: '24px', border: '1px dashed var(--border-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Nenhum domínio configurado</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Adicione um domínio acima para começar</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {domains.map((domain) => (
-                    <div key={domain.id} style={{ padding: '16px', border: '1px solid var(--border-secondary)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500 }}>{domain.domain}</div>
-                        <div style={{ fontSize: '12px', color: domain.verified ? 'var(--color-success)' : 'var(--color-warning)', marginTop: '4px' }}>
-                          {domain.verified ? '✓ Verificado' : 'Pendente de verificação'}
-                        </div>
-                        {!domain.verified && domain.txtRecord && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontFamily: 'monospace' }}>
-                            TXT: {domain.txtRecord}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteDomain(domain.id)}
-                        style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--color-error)', background: 'transparent', border: '1px solid var(--color-error)', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'api-keys' && (
-            <div>
-              <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>API Keys</h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>
-                Gerencie suas chaves de API para acesso programático.
-              </p>
-
-              <form onSubmit={handleCreateApiKey} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-                <input
-                  type="text"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="Nome da API Key"
-                  style={{ flex: 1, padding: '10px 12px', fontSize: '14px', border: '1px solid var(--border-secondary)', borderRadius: '8px' }}
-                />
-                <button
-                  type="submit"
-                  style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 500, color: 'var(--bg-secondary)', background: 'var(--primary)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                >
-                  Criar
-                </button>
-              </form>
-
-              {apiKeys.length === 0 ? (
-                <div style={{ padding: '24px', border: '1px dashed var(--border-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Nenhuma API Key configurada</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Crie uma API Key acima para começar</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {apiKeys.map((key) => (
-                    <div key={key.id} style={{ padding: '16px', border: '1px solid var(--border-secondary)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500 }}>{key.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          Criada em: {new Date(key.createdAt).toLocaleDateString('pt-BR')}
-                          {key.lastUsedAt && ` | Última uso: ${new Date(key.lastUsedAt).toLocaleDateString('pt-BR')}`}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRevokeApiKey(key.id)}
-                        style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--color-error)', background: 'transparent', border: '1px solid var(--color-error)', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        Revogar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+    <>
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-title">Configurações</div>
+          <div className="page-subtitle">Gerencie sua conta e preferências</div>
         </div>
       </div>
-    </div>
+
+      <div className="page-content" style={{ maxWidth: '640px' }}>
+        {/* Profile card */}
+        <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%', flexShrink: 0,
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15))',
+              border: '2px solid var(--border-primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '22px', fontWeight: 500, color: '#8b5cf6', overflow: 'hidden',
+            }}>
+              {user.image
+                ? <img src={user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : (user.name || user.email || '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+              }
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+                {user.name || 'Sem nome'}
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{user.email}</div>
+              <div style={{ marginTop: '8px' }}>
+                <span style={{
+                  fontSize: '11px', fontWeight: 500, padding: '3px 10px', borderRadius: '99px',
+                  background: 'rgba(139,92,246,0.1)', color: '#8b5cf6',
+                  border: '0.5px solid rgba(139,92,246,0.2)',
+                }}>
+                  {user.plan}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Account info */}
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            Informações da conta
+          </div>
+          <div className="card" style={{ padding: '0' }}>
+            {[
+              { label: 'Nome', value: user.name || '—' },
+              { label: 'Email', value: user.email },
+              { label: 'Plano', value: user.plan },
+              { label: 'Links criados', value: String(user._count.links) },
+              { label: 'Membro desde', value: memberSince },
+            ].map((row, i, arr) => (
+              <div key={row.label} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 20px',
+                borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
+              }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{row.label}</span>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '12px', fontWeight: 300 }}>
+          Para alterar nome, foto ou senha, clique no seu perfil na barra lateral.
+        </p>
+      </div>
+    </>
   )
 }

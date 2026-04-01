@@ -122,7 +122,7 @@ export function CreateLinkModal({ onClose, onSuccess }: CreateLinkModalProps) {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+          <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
             <div>
               <label style={labelStyle}>Alias personalizado</label>
               <div style={{ display: 'flex', alignItems: 'center', border: '0.5px solid rgba(0,0,0,0.12)', borderRadius: '6px', overflow: 'hidden' }}>
@@ -150,7 +150,7 @@ export function CreateLinkModal({ onClose, onSuccess }: CreateLinkModalProps) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
             <div>
               <label style={labelStyle}>Senha (opcional)</label>
               <input

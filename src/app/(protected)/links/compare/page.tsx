@@ -91,95 +91,112 @@ export default function ComparePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div style={{ padding: '24px' }}>
-        <p style={{ color: 'var(--text-tertiary)' }}>Carregando...</p>
-      </div>
+      <>
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-title">Comparar Links</div>
+            <div className="page-subtitle">Compare o desempenho de múltiplos links</div>
+          </div>
+        </div>
+        <div className="page-content">
+          <p style={{ color: 'var(--text-tertiary)' }}>Carregando...</p>
+        </div>
+      </>
     )
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>Comparar Links</h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>Compare o desempenho de múltiplos links</p>
-      </div>
-
-      <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '16px' }}>Selecione os links para comparar</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {links.map((link) => (
-            <label
-              key={link.id}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '8px 12px', border: '1px solid var(--border-secondary)', borderRadius: '8px',
-                cursor: 'pointer', fontSize: '13px',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={linkIds.includes(link.id)}
-                onChange={(e) => handleToggleLink(link.id, e.target.checked)}
-              />
-              {link.title || link.shortCode}
-            </label>
-          ))}
+    <>
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="page-title">Comparar Links</div>
+          <div className="page-subtitle">Compare o desempenho de múltiplos links</div>
         </div>
       </div>
 
-      {linkIds.length > 0 && comparisonData && (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Total de cliques</div>
-              <div style={{ fontSize: '28px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                {comparisonData.summary.reduce((sum: number, l) => sum + l.totalClicks, 0)}
-              </div>
-            </div>
-            <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Links comparados</div>
-              <div style={{ fontSize: '28px', fontWeight: 600, color: 'var(--text-primary)' }}>{comparisonData.summary.length}</div>
-            </div>
-            <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Média de cliques</div>
-              <div style={{ fontSize: '28px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                {Math.round(comparisonData.summary.reduce((sum: number, l) => sum + l.totalClicks, 0) / comparisonData.summary.length)}
-              </div>
-            </div>
-            <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Melhor performing</div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-success)' }}>
-                {comparisonData.summary.sort((a, b) => b.totalClicks - a.totalClicks)[0]?.title || '-'}
-              </div>
-            </div>
+      <div className="page-content">
+        {/* Link Selector */}
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '16px', color: 'var(--text-primary)' }}>
+            Selecione os links para comparar
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {links.map((link) => {
+              const selected = linkIds.includes(link.id)
+              return (
+                <label
+                  key={link.id}
+                  className={`btn ${selected ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={(e) => handleToggleLink(link.id, e.target.checked)}
+                    style={{ marginRight: '6px', accentColor: '#8b5cf6' }}
+                  />
+                  {link.title || link.shortCode}
+                </label>
+              )
+            })}
           </div>
+        </div>
 
-          <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)', marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '16px' }}>Comparação detalhada</h3>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        {linkIds.length > 0 && comparisonData && (
+          <>
+            {/* Summary Cards */}
+            <div className="analytics-grid">
+              <div className="metric-card">
+                <div className="metric-label">Total de cliques</div>
+                <div className="metric-value">
+                  {comparisonData.summary.reduce((sum: number, l) => sum + l.totalClicks, 0)}
+                </div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">Links comparados</div>
+                <div className="metric-value">{comparisonData.summary.length}</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">Média de cliques</div>
+                <div className="metric-value">
+                  {Math.round(comparisonData.summary.reduce((sum: number, l) => sum + l.totalClicks, 0) / comparisonData.summary.length)}
+                </div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">Melhor performing</div>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-success)', marginTop: '8px' }}>
+                  {comparisonData.summary.sort((a, b) => b.totalClicks - a.totalClicks)[0]?.title || '-'}
+                </div>
+              </div>
+            </div>
+
+            {/* Comparison Table */}
+            <div className="table-wrap" style={{ marginBottom: '24px' }}>
+              <table className="table">
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '12px', fontSize: '12px', color: 'var(--text-tertiary)', borderBottom: '1px solid var(--bg-active)' }}>Link</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '12px', color: 'var(--text-tertiary)', borderBottom: '1px solid var(--bg-active)' }}>Cliques</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '12px', color: 'var(--text-tertiary)', borderBottom: '1px solid var(--bg-active)' }}>Visitantes únicos</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '12px', color: 'var(--text-tertiary)', borderBottom: '1px solid var(--bg-active)' }}>Criado em</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '12px', color: 'var(--text-tertiary)', borderBottom: '1px solid var(--bg-active)' }}>CTR</th>
+                    <th>Link</th>
+                    <th style={{ textAlign: 'right' }}>Cliques</th>
+                    <th style={{ textAlign: 'right' }}>Visitantes únicos</th>
+                    <th style={{ textAlign: 'right' }}>Criado em</th>
+                    <th style={{ textAlign: 'right' }}>CTR</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonData.summary.sort((a, b) => b.totalClicks - a.totalClicks).map((link) => (
                     <tr key={link.id}>
-                      <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500, borderBottom: '1px solid var(--bg-active)' }}>
-                        {link.title || link.shortCode}
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{link.originalUrl.substring(0, 40)}...</div>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{link.title || link.shortCode}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                          {link.originalUrl.substring(0, 40)}...
+                        </div>
                       </td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '13px', fontWeight: 500, borderBottom: '1px solid var(--bg-active)' }}>{link.totalClicks}</td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '13px', borderBottom: '1px solid var(--bg-active)' }}>{link.uniqueVisitors}</td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '13px', color: 'var(--text-secondary)', borderBottom: '1px solid var(--bg-active)' }}>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }}>{link.totalClicks}</td>
+                      <td style={{ textAlign: 'right' }}>{link.uniqueVisitors}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
                         {new Date(link.createdAt).toLocaleDateString('pt-BR')}
                       </td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '13px', color: 'var(--primary)', fontWeight: 500, borderBottom: '1px solid var(--bg-active)' }}>
+                      <td style={{ textAlign: 'right', color: 'var(--primary)', fontWeight: 500 }}>
                         {link.ctr}%
                       </td>
                     </tr>
@@ -187,35 +204,52 @@ export default function ComparePage() {
                 </tbody>
               </table>
             </div>
-          </div>
 
-          <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '16px' }}>Gráfico de comparação</h3>
-            <div style={{ height: '200px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '0 20px' }}>
-              {comparisonData.summary.sort((a, b) => b.totalClicks - a.totalClicks).map((link, i) => {
-                const maxClicks = Math.max(...comparisonData.summary.map(l => l.totalClicks), 1)
-                const colors = ['var(--primary)', 'var(--primary-light)', '#A09BE0', '#C8C3E8', '#E0DDF2']
-                return (
-                  <div key={link.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 500, marginBottom: '8px' }}>{link.totalClicks}</div>
-                    <div
-                      style={{
-                        width: '100%',
-                        height: `${(link.totalClicks / maxClicks) * 150}px`,
-                        background: colors[i % colors.length],
-                        borderRadius: '8px 8px 0 0',
-                      }}
-                    />
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '8px', textAlign: 'center', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {link.title || link.shortCode}
+            {/* Bar Chart */}
+            <div className="card">
+              <h3 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '24px', color: 'var(--text-primary)' }}>
+                Gráfico de comparação
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '0 8px', height: '200px' }}>
+                {comparisonData.summary.sort((a, b) => b.totalClicks - a.totalClicks).map((link, i) => {
+                  const maxClicks = Math.max(...comparisonData.summary.map(l => l.totalClicks), 1)
+                  const colors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+                  return (
+                    <div key={link.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 500, marginBottom: '8px', color: 'var(--text-primary)' }}>
+                        {link.totalClicks}
+                      </div>
+                      <div
+                        style={{
+                          width: '100%',
+                          maxWidth: '80px',
+                          height: `${(link.totalClicks / maxClicks) * 140}px`,
+                          background: colors[i % colors.length],
+                          borderRadius: '8px 8px 0 0',
+                          transition: 'height 300ms ease',
+                        }}
+                      />
+                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '8px', textAlign: 'center', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {link.title || link.shortCode}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {linkIds.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state-icon">📊</div>
+            <div className="empty-state-title">Selecione links para comparar</div>
+            <div className="empty-state-desc">
+              Escolha dois ou mais links acima para ver uma comparação detalhada de desempenho.
             </div>
           </div>
-        </>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   )
 }
