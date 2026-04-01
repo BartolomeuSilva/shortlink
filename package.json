@@ -1,0 +1,47 @@
+{
+  "name": "123bit-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.0.0",
+    "@prisma/client": "^5.14.0",
+    "@tanstack/react-table": "^8.17.3",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "geoip-lite": "^1.4.10",
+    "ioredis": "^5.3.2",
+    "lucide-react": "^0.395.0",
+    "nanoid": "^5.0.7",
+    "next": "14.2.5",
+    "next-auth": "5.0.0-beta.19",
+    "prisma": "^5.14.0",
+    "qrcode": "^1.5.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "recharts": "^2.12.7",
+    "ua-parser-js": "^1.0.38",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/geoip-lite": "^1.4.4",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/ua-parser-js": "^0.7.39",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
