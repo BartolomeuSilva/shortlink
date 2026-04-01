@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>123bit.app — Analytics do Link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --purple-50:#EEEDFE;--purple-100:#CECBF6;--purple-200:#AFA9EC;
+    --purple-400:#7F77DD;--purple-600:#534AB7;--purple-800:#3C3489;
+    --gray-50:#F7F7F5;--gray-100:#EEEDE9;--gray-200:#D8D7D1;
+    --gray-400:#9E9D97;--gray-600:#5F5E5A;--gray-900:#1A1A18;
+    --green-50:#EAF3DE;--green-600:#3B6D11;--green-800:#27500A;
+    --amber-50:#FAEEDA;--amber-600:#854F0B;
+    --red-50:#FCEBEB;--red-600:#A32D2D;
+    --sidebar-w:220px;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#F4F3F0;color:var(--gray-900);display:flex;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+  /* SIDEBAR */
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:#fff;border-right:0.5px solid rgba(0,0,0,0.07);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:10}
+  .sidebar-logo{padding:20px 20px 16px;font-size:16px;font-weight:500;letter-spacing:-0.5px;color:var(--gray-900);text-decoration:none;border-bottom:0.5px solid rgba(0,0,0,0.06);display:block}
+  .sidebar-logo span{color:var(--purple-600)}
+  .sidebar-section{padding:16px 12px 8px;font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);font-size:13px;font-weight:400;color:var(--gray-600);cursor:pointer;text-decoration:none;margin:1px 8px;transition:background 0.12s,color 0.12s}
+  .nav-item:hover{background:var(--gray-50);color:var(--gray-900)}
+  .nav-item.active{background:var(--purple-50);color:var(--purple-800);font-weight:500}
+  .nav-item svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .sidebar-bottom{margin-top:auto;padding:12px 8px;border-top:0.5px solid rgba(0,0,0,0.06)}
+  .user-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.12s}
+  .user-card:hover{background:var(--gray-50)}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--purple-800);flex-shrink:0}
+  .user-name{font-size:13px;font-weight:500;color:var(--gray-900);line-height:1.2}
+  .user-plan{font-size:11px;color:var(--gray-400);font-weight:300}
+  .plan-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:99px;background:var(--purple-50);color:var(--purple-800);border:0.5px solid var(--purple-100);margin-left:6px}
+
+  /* MAIN */
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+  /* TOPBAR */
+  .topbar{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.07);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .topbar-left{display:flex;align-items:center;gap:10px}
+  .topbar-back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-400);text-decoration:none;transition:color 0.12s;padding:5px 0}
+  .topbar-back:hover{color:var(--gray-900)}
+  .topbar-back svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.5;fill:none}
+  .topbar-sep{color:var(--gray-200);font-size:16px}
+  .topbar-title{font-size:15px;font-weight:500;color:var(--gray-900);letter-spacing:-0.3px}
+  .topbar-right{display:flex;align-items:center;gap:8px}
+  .btn-action{font-family:inherit;font-size:12px;font-weight:400;color:var(--gray-600);background:#fff;border:0.5px solid rgba(0,0,0,0.1);padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.12s}
+  .btn-action:hover{background:var(--gray-50)}
+  .btn-action svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.5;fill:none}
+  .btn-primary{font-family:inherit;font-size:12px;font-weight:500;color:#fff;background:var(--purple-600);border:none;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s}
+  .btn-primary:hover{background:var(--purple-800)}
+
+  /* CONTENT */
+  .content{padding:24px 28px;flex:1}
+
+  /* LINK HEADER */
+  .link-header{
+    background:#fff;border:0.5px solid rgba(0,0,0,0.07);
+    border-radius:var(--radius-lg);padding:20px 24px;
+    display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;
+  }
+  .link-favicon-lg{
+    width:44px;height:44px;border-radius:var(--radius-md);
+    background:var(--gray-100);border:0.5px solid rgba(0,0,0,0.06);
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+  }
+  .link-header-info{flex:1;min-width:0}
+  .link-header-title{font-size:17px;font-weight:500;color:var(--gray-900);letter-spacing:-0.4px;margin-bottom:4px}
+  .link-header-short{
+    font-family:'DM Mono',monospace;font-size:13px;color:var(--purple-600);
+    display:flex;align-items:center;gap:6px;margin-bottom:6px;
+  }
+  .link-header-short svg{width:11px;height:11px;stroke:currentColor;stroke-width:1.5;fill:none;opacity:0.5;flex-shrink:0}
+  .link-header-orig{font-size:12px;color:var(--gray-400);font-weight:300;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px}
+  .link-header-meta{display:flex;align-items:center;gap:12px;margin-top:8px}
+  .link-meta-tag{font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px}
+  .status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px}
+  .status-active{background:var(--green-50);color:var(--green-800)}
+  .status-dot{width:5px;height:5px;border-radius:50%}
+  .dot-active{background:var(--green-600)}
+  .link-meta-sep{width:3px;height:3px;border-radius:50%;background:var(--gray-200)}
+  .link-meta-text{font-size:12px;color:var(--gray-400);font-weight:300}
+
+  /* PERIOD TABS */
+  .period-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .period-bar-title{font-size:13px;font-weight:500;color:var(--gray-900)}
+  .ptabs{display:flex;gap:2px;background:var(--gray-100);border-radius:var(--radius-sm);padding:3px}
+  .ptab{font-family:inherit;font-size:11px;font-weight:400;color:var(--gray-400);background:none;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;transition:all 0.12s}
+  .ptab:hover{background:var(--gray-50);color:var(--gray-900)}
+  .ptab.active{background:#fff;color:var(--gray-900);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+
+  /* METRICS */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .metric{background:#fff;border:0.5px solid rgba(0,0,0,0.07);border-radius:var(--radius-lg);padding:20px}
+  .metric-label{font-size:12px;color:var(--gray-400);font-weight:400;margin-bottom:8px}
+  .metric-value{font-size:28px;font-weight:300;letter-spacing:-1.5px;color:var(--gray-900);line-height:1;margin-bottom:6px}
+  .metric-delta{font-size:12px;font-weight:400;display:flex;align-items:center;gap:4px}
+  .delta-up{color:var(--green-600)}
+  .delta-down{color:var(--red-600)}
+  .delta-neutral{color:var(--gray-400)}
+  .delta-dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+
+  /* GRID */
+  .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+  .card{background:#fff;border:0.5px solid rgba(0,0,0,0.07);border-radius:var(--radius-lg);padding:20px}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .card-title{font-size:13px;font-weight:500;color:var(--gray-900);letter-spacing:-0.2px}
+  .card-sub{font-size:12px;color:var(--gray-400);font-weight:300}
+
+  /* GEO LIST */
+  .geo-list{display:flex;flex-direction:column;gap:10px}
+  .geo-item{display:flex;align-items:center;gap:10px}
+  .geo-flag{font-size:15px;width:22px;text-align:center;flex-shrink:0}
+  .geo-country{font-size:13px;color:var(--gray-900);font-weight:400;flex:1}
+  .geo-bar-wrap{flex:2;height:4px;background:var(--gray-100);border-radius:99px;overflow:hidden}
+  .geo-bar{height:100%;background:var(--purple-400);border-radius:99px}
+  .geo-pct{font-size:12px;color:var(--gray-400);min-width:36px;text-align:right;font-family:'DM Mono',monospace}
+  .geo-num{font-size:12px;color:var(--gray-400);min-width:44px;text-align:right;font-family:'DM Mono',monospace}
+
+  /* DEVICE / BROWSER LISTS */
+  .breakdown-list{display:flex;flex-direction:column;gap:12px}
+  .breakdown-item{display:flex;align-items:center;gap:10px}
+  .breakdown-icon{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--gray-50);border:0.5px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+  .breakdown-icon svg{width:14px;height:14px;stroke:var(--gray-600);stroke-width:1.5;fill:none}
+  .breakdown-name{font-size:13px;color:var(--gray-900);flex:1}
+  .breakdown-bar-wrap{flex:2;height:4px;background:var(--gray-100);border-radius:99px;overflow:hidden}
+  .breakdown-bar{height:100%;background:var(--purple-200);border-radius:99px}
+  .breakdown-pct{font-size:12px;color:var(--gray-400);min-width:36px;text-align:right;font-family:'DM Mono',monospace}
+
+  /* REFERRERS */
+  .referrer-list{display:flex;flex-direction:column;gap:0}
+  .referrer-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,0.05)}
+  .referrer-item:last-child{border-bottom:none}
+  .referrer-source{font-size:13px;color:var(--gray-900);flex:1}
+  .referrer-badge{font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--gray-100);color:var(--gray-600)}
+  .referrer-clicks{font-family:'DM Mono',monospace;font-size:12px;color:var(--gray-600);min-width:60px;text-align:right}
+  .referrer-pct{font-size:11px;color:var(--gray-400);min-width:36px;text-align:right}
+
+  /* RECENT CLICKS */
+  .clicks-table{width:100%;border-collapse:collapse}
+  .clicks-table th{font-size:11px;font-weight:500;color:var(--gray-400);text-align:left;padding:8px 12px;border-bottom:0.5px solid rgba(0,0,0,0.07);letter-spacing:0.2px;text-transform:uppercase}
+  .clicks-table td{font-size:12px;color:var(--gray-900);padding:10px 12px;border-bottom:0.5px solid rgba(0,0,0,0.05);vertical-align:middle}
+  .clicks-table tr:last-child td{border-bottom:none}
+  .clicks-table tr:hover td{background:var(--gray-50)}
+  .mono{font-family:'DM Mono',monospace}
+
+  /* QR PREVIEW */
+  .qr-section{background:#fff;border:0.5px solid rgba(0,0,0,0.07);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .qr-placeholder{width:120px;height:120px;background:var(--gray-50);border:0.5px solid rgba(0,0,0,0.08);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;margin:12px auto}
+  .qr-placeholder svg{width:80px;height:80px;stroke:var(--gray-300);stroke-width:1;fill:none}
+  .qr-hint{font-size:12px;color:var(--gray-400);font-weight:300;margin-bottom:12px}
+  .btn-dl{font-family:inherit;font-size:12px;font-weight:500;color:var(--purple-700);background:var(--purple-50);border:0.5px solid var(--purple-100);padding:7px 16px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.12s;width:100%}
+  .btn-dl:hover{background:var(--purple-100)}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-900);color:#fff;font-size:13px;padding:10px 20px;border-radius:99px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:200;white-space:nowrap;pointer-events:none}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="123bit-landing.html" class="sidebar-logo">123<span>bit</span>.app</a>
+  <div class="sidebar-section">Menu</div>
+  <a class="nav-item" href="123bit-dashboard.html"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a class="nav-item active" href="123bit-links.html"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Meus Links</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>Analytics</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-5v5"/><path d="M16 16h.01"/></svg>QR Codes</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Domínios</a>
+  <div class="sidebar-section">Conta</div>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Perfil</a>
+  <a class="nav-item" href="123bit-settings.html"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Configurações</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M8 9l3 3-3 3"/><path d="M13 15h3"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>API Keys</a>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">JD</div>
+      <div>
+        <div class="user-name">João Dev <span class="plan-badge">Pro</span></div>
+        <div class="user-plan">joao@exemplo.com</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="topbar-back" href="123bit-links.html">
+        <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+        Meus Links
+      </a>
+      <span class="topbar-sep">/</span>
+      <span class="topbar-title">Lançamento Produto 2024</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-action" onclick="toast('Link copiado!')">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar link
+      </button>
+      <button class="btn-action" onclick="toast('Exportando dados...')">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar CSV
+      </button>
+      <button class="btn-primary" onclick="toast('Abrindo editor...')">
+        <svg viewBox="0 0 24 24" style="stroke:#fff;stroke-width:1.5;fill:none;width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- LINK HEADER -->
+    <div class="link-header">
+      <div class="link-favicon-lg">📋</div>
+      <div class="link-header-info">
+        <div class="link-header-title">Lançamento Produto 2024</div>
+        <div class="link-header-short">
+          123bit.app/launch24
+          <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </div>
+        <div class="link-header-orig">notion.so/minha-empresa/lancamento-produto-2024-detalhes-completos</div>
+        <div class="link-header-meta">
+          <span class="status-badge status-active"><span class="status-dot dot-active"></span>Ativo</span>
+          <span class="link-meta-sep"></span>
+          <span class="link-meta-text">Criado em 12 Mar 2026</span>
+          <span class="link-meta-sep"></span>
+          <span class="link-meta-tag" style="background:#EEEDFE;color:#3C3489;font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px">Marketing</span>
+          <span class="link-meta-tag" style="background:#FAEEDA;color:#854F0B;font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px">Produto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERIOD -->
+    <div class="period-bar">
+      <span class="period-bar-title">Visão geral de analytics</span>
+      <div class="ptabs">
+        <button class="ptab active" onclick="setPeriod(this,'24h')">24h</button>
+        <button class="ptab" onclick="setPeriod(this,'7d')">7d</button>
+        <button class="ptab" onclick="setPeriod(this,'30d')">30d</button>
+        <button class="ptab" onclick="setPeriod(this,'90d')">90d</button>
+        <button class="ptab" onclick="setPeriod(this,'all')">Tudo</button>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Total de cliques</div>
+        <div class="metric-value">2.431</div>
+        <div class="metric-delta delta-up"><span class="delta-dot" style="background:var(--green-600)"></span>+23% vs período anterior</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cliques únicos</div>
+        <div class="metric-value">1.897</div>
+        <div class="metric-delta delta-up"><span class="delta-dot" style="background:var(--green-600)"></span>78% de taxa única</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Média diária</div>
+        <div class="metric-value">347</div>
+        <div class="metric-delta delta-neutral"><span class="delta-dot" style="background:var(--gray-400)"></span>últimos 7 dias</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Pico de cliques</div>
+        <div class="metric-value">892</div>
+        <div class="metric-delta delta-neutral"><span class="delta-dot" style="background:var(--gray-400)"></span>14 Mar · 14h–15h</div>
+      </div>
+    </div>
+
+    <!-- CHART + GEO -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cliques ao longo do tempo</div>
+            <div class="card-sub" id="chartSub">Últimas 24 horas — hora a hora</div>
+          </div>
+        </div>
+        <canvas id="clicksChart" height="160"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Top países</div>
+          <div class="card-sub">2.431 cliques</div>
+        </div>
+        <div class="geo-list">
+          <div class="geo-item">
+            <div class="geo-flag">🇧🇷</div>
+            <div class="geo-country">Brasil</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:68%"></div></div>
+            <div class="geo-num">1.653</div>
+            <div class="geo-pct">68%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇵🇹</div>
+            <div class="geo-country">Portugal</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:14%"></div></div>
+            <div class="geo-num">340</div>
+            <div class="geo-pct">14%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇺🇸</div>
+            <div class="geo-country">EUA</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:9%"></div></div>
+            <div class="geo-num">219</div>
+            <div class="geo-pct">9%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇦🇷</div>
+            <div class="geo-country">Argentina</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:5%"></div></div>
+            <div class="geo-num">122</div>
+            <div class="geo-pct">5%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🌍</div>
+            <div class="geo-country">Outros</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:4%"></div></div>
+            <div class="geo-num">97</div>
+            <div class="geo-pct">4%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE / OS / BROWSER -->
+    <div class="grid-3">
+      <!-- Dispositivo -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Dispositivo</div>
+        </div>
+        <div class="breakdown-list">
+          <div class="breakdown-item">
+            <div class="breakdown-icon">
+              <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+            </div>
+            <div class="breakdown-name">Mobile</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:62%"></div></div>
+            <div class="breakdown-pct">62%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="breakdown-name">Desktop</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:31%"></div></div>
+            <div class="breakdown-pct">31%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8M12 3v4"/></svg>
+            </div>
+            <div class="breakdown-name">Tablet</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:7%"></div></div>
+            <div class="breakdown-pct">7%</div>
+          </div>
+        </div>
+      </div>
+      <!-- OS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Sistema Operacional</div>
+        </div>
+        <div class="breakdown-list">
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px"></div>
+            <div class="breakdown-name">Android</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:48%"></div></div>
+            <div class="breakdown-pct">48%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px"></div>
+            <div class="breakdown-name">iOS</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:24%"></div></div>
+            <div class="breakdown-pct">24%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px">🪟</div>
+            <div class="breakdown-name">Windows</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:18%"></div></div>
+            <div class="breakdown-pct">18%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px"></div>
+            <div class="breakdown-name">macOS</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:10%"></div></div>
+            <div class="breakdown-pct">10%</div>
+          </div>
+        </div>
+      </div>
+      <!-- Browser -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Navegador</div>
+        </div>
+        <div class="breakdown-list">
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px">🌐</div>
+            <div class="breakdown-name">Chrome</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:55%"></div></div>
+            <div class="breakdown-pct">55%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px">🦊</div>
+            <div class="breakdown-name">Safari</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:28%"></div></div>
+            <div class="breakdown-pct">28%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px">🦅</div>
+            <div class="breakdown-name">Edge</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:10%"></div></div>
+            <div class="breakdown-pct">10%</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-icon" style="font-size:15px">🔥</div>
+            <div class="breakdown-name">Firefox</div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:7%"></div></div>
+            <div class="breakdown-pct">7%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERRERS + RECENT CLICKS + QR -->
+    <div class="grid-2" style="grid-template-columns:1fr 280px">
+      <!-- Referrers -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Referrers</div>
+          <div class="card-sub">de onde vieram os cliques</div>
+        </div>
+        <div class="referrer-list">
+          <div class="referrer-item">
+            <div class="referrer-source">Direto / Não rastreado</div>
+            <div class="referrer-badge">direto</div>
+            <div class="referrer-clicks">876</div>
+            <div class="referrer-pct">36%</div>
+          </div>
+          <div class="referrer-item">
+            <div class="referrer-source">instagram.com</div>
+            <div class="referrer-badge">social</div>
+            <div class="referrer-clicks">534</div>
+            <div class="referrer-pct">22%</div>
+          </div>
+          <div class="referrer-item">
+            <div class="referrer-source">google.com</div>
+            <div class="referrer-badge">busca</div>
+            <div class="referrer-clicks">389</div>
+            <div class="referrer-pct">16%</div>
+          </div>
+          <div class="referrer-item">
+            <div class="referrer-source">twitter.com / x.com</div>
+            <div class="referrer-badge">social</div>
+            <div class="referrer-clicks">268</div>
+            <div class="referrer-pct">11%</div>
+          </div>
+          <div class="referrer-item">
+            <div class="referrer-source">linkedin.com</div>
+            <div class="referrer-badge">social</div>
+            <div class="referrer-clicks">194</div>
+            <div class="referrer-pct">8%</div>
+          </div>
+          <div class="referrer-item">
+            <div class="referrer-source">whatsapp (via app)</div>
+            <div class="referrer-badge">mensagem</div>
+            <div class="referrer-clicks">170</div>
+            <div class="referrer-pct">7%</div>
+          </div>
+        </div>
+      </div>
+      <!-- QR Code -->
+      <div class="qr-section">
+        <div class="card-title" style="align-self:flex-start;margin-bottom:4px">QR Code</div>
+        <div class="card-sub" style="align-self:flex-start;margin-bottom:0">123bit.app/launch24</div>
+        <div class="qr-placeholder">
+          <svg viewBox="0 0 120 120" fill="none">
+            <!-- QR placeholder pattern -->
+            <rect x="10" y="10" width="30" height="30" rx="2" fill="#EEEDE9"/>
+            <rect x="15" y="15" width="20" height="20" rx="1" fill="#1A1A18"/>
+            <rect x="18" y="18" width="14" height="14" rx="1" fill="#FAFAF8"/>
+            <rect x="21" y="21" width="8" height="8" fill="#1A1A18"/>
+            <rect x="80" y="10" width="30" height="30" rx="2" fill="#EEEDE9"/>
+            <rect x="85" y="15" width="20" height="20" rx="1" fill="#1A1A18"/>
+            <rect x="88" y="18" width="14" height="14" rx="1" fill="#FAFAF8"/>
+            <rect x="91" y="21" width="8" height="8" fill="#1A1A18"/>
+            <rect x="10" y="80" width="30" height="30" rx="2" fill="#EEEDE9"/>
+            <rect x="15" y="85" width="20" height="20" rx="1" fill="#1A1A18"/>
+            <rect x="18" y="88" width="14" height="14" rx="1" fill="#FAFAF8"/>
+            <rect x="21" y="91" width="8" height="8" fill="#1A1A18"/>
+            <rect x="50" y="10" width="5" height="5" fill="#1A1A18"/>
+            <rect x="58" y="10" width="5" height="5" fill="#1A1A18"/>
+            <rect x="66" y="10" width="5" height="5" fill="#1A1A18"/>
+            <rect x="50" y="18" width="5" height="5" fill="#1A1A18"/>
+            <rect x="62" y="18" width="5" height="5" fill="#1A1A18"/>
+            <rect x="50" y="26" width="5" height="5" fill="#1A1A18"/>
+            <rect x="58" y="26" width="5" height="5" fill="#1A1A18"/>
+            <rect x="50" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="58" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="66" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="74" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="82" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="90" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="98" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="106" y="50" width="5" height="5" fill="#1A1A18"/>
+            <rect x="50" y="58" width="5" height="5" fill="#1A1A18"/>
+            <rect x="58" y="58" width="5" height="5" fill="#1A1A18"/>
+            <rect x="74" y="58" width="5" height="5" fill="#1A1A18"/>
+            <rect x="82" y="58" width="5" height="5" fill="#1A1A18"/>
+            <rect x="98" y="58" width="5" height="5" fill="#1A1A18"/>
+            <rect x="106" y="58" width="5" height="5" fill="#1A1A18"/>
+            <rect x="50" y="66" width="5" height="5" fill="#1A1A18"/>
+            <rect x="66" y="66" width="5" height="5" fill="#1A1A18"/>
+            <rect x="74" y="66" width="5" height="5" fill="#1A1A18"/>
+            <rect x="90" y="66" width="5" height="5" fill="#1A1A18"/>
+            <rect x="106" y="66" width="5" height="5" fill="#1A1A18"/>
+          </svg>
+        </div>
+        <div class="qr-hint">Gerado automaticamente para cada link</div>
+        <button class="btn-dl" onclick="toast('Baixando SVG...')">Baixar SVG</button>
+        <button class="btn-dl" style="margin-top:6px;background:#fff;color:var(--gray-600);border-color:rgba(0,0,0,0.1)" onclick="toast('Baixando PNG...')">Baixar PNG</button>
+      </div>
+    </div>
+
+    <!-- RECENT CLICKS TABLE -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div class="card-title">Últimos cliques</div>
+        <div class="card-sub">dados anonimizados conforme LGPD</div>
+      </div>
+      <table class="clicks-table">
+        <thead>
+          <tr>
+            <th>Data / Hora</th>
+            <th>País</th>
+            <th>Cidade</th>
+            <th>Dispositivo</th>
+            <th>Browser</th>
+            <th>Referrer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">31 Mar 2026 · 14:22</td>
+            <td>🇧🇷 Brasil</td>
+            <td>São Paulo</td>
+            <td>Mobile</td>
+            <td>Chrome</td>
+            <td>instagram.com</td>
+          </tr>
+          <tr>
+            <td class="mono">31 Mar 2026 · 14:19</td>
+            <td>🇵🇹 Portugal</td>
+            <td>Lisboa</td>
+            <td>Desktop</td>
+            <td>Firefox</td>
+            <td>Direto</td>
+          </tr>
+          <tr>
+            <td class="mono">31 Mar 2026 · 14:15</td>
+            <td>🇧🇷 Brasil</td>
+            <td>Rio de Janeiro</td>
+            <td>Mobile</td>
+            <td>Safari</td>
+            <td>twitter.com</td>
+          </tr>
+          <tr>
+            <td class="mono">31 Mar 2026 · 14:09</td>
+            <td>🇺🇸 EUA</td>
+            <td>New York</td>
+            <td>Desktop</td>
+            <td>Chrome</td>
+            <td>google.com</td>
+          </tr>
+          <tr>
+            <td class="mono">31 Mar 2026 · 14:03</td>
+            <td>🇧🇷 Brasil</td>
+            <td>Curitiba</td>
+            <td>Mobile</td>
+            <td>Chrome</td>
+            <td>Direto</td>
+          </tr>
+          <tr>
+            <td class="mono">31 Mar 2026 · 13:58</td>
+            <td>🇦🇷 Argentina</td>
+            <td>Buenos Aires</td>
+            <td>Desktop</td>
+            <td>Edge</td>
+            <td>linkedin.com</td>
+          </tr>
+          <tr>
+            <td class="mono">31 Mar 2026 · 13:51</td>
+            <td>🇧🇷 Brasil</td>
+            <td>Belo Horizonte</td>
+            <td>Tablet</td>
+            <td>Safari</td>
+            <td>Direto</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Chart
+const ctx = document.getElementById('clicksChart').getContext('2d');
+const chartData = {
+  '24h': {
+    labels: ['01h','02h','03h','04h','05h','06h','07h','08h','09h','10h','11h','12h','13h','14h','15h','16h','17h','18h','19h','20h','21h','22h','23h','24h'],
+    data: [4,2,1,1,3,12,38,72,98,145,189,210,176,312,289,245,198,167,143,98,72,45,28,14]
+  },
+  '7d': {
+    labels: ['25 Mar','26 Mar','27 Mar','28 Mar','29 Mar','30 Mar','31 Mar'],
+    data: [287,312,198,345,402,289,598]
+  },
+  '30d': {
+    labels: Array.from({length:30},(_,i)=>`${i+1}/3`),
+    data: [120,145,98,167,210,189,234,198,312,289,345,278,312,398,356,289,312,345,289,378,412,356,289,312,367,345,289,312,398,431]
+  },
+  '90d': {
+    labels: Array.from({length:12},(_,i)=>`Sem ${i+1}`),
+    data: [1200,1450,980,1670,2100,1890,2340,1980,3120,2890,3450,2780]
+  },
+  'all': {
+    labels: ['Jan','Fev','Mar'],
+    data: [8900,10200,12847]
+  }
+};
+
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: chartData['24h'].labels,
+    datasets: [{
+      data: chartData['24h'].data,
+      backgroundColor: 'rgba(127,119,221,0.18)',
+      borderColor: '#7F77DD',
+      borderWidth: 1.5,
+      borderRadius: 4,
+      hoverBackgroundColor: 'rgba(127,119,221,0.32)',
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1A1A18',
+        titleFont: { family: 'DM Mono', size: 11 },
+        bodyFont: { family: 'DM Sans', size: 12 },
+        padding: 10,
+        callbacks: { title: t => t[0].label, label: t => `${t.raw} cliques` }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: 'DM Mono', size: 10 }, color: '#9E9D97', maxTicksLimit: 8 }, border: { display: false } },
+      y: { grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, ticks: { font: { family: 'DM Mono', size: 10 }, color: '#9E9D97' }, border: { display: false } }
+    }
+  }
+});
+
+const subLabels = {
+  '24h': 'Últimas 24 horas — hora a hora',
+  '7d': 'Últimos 7 dias — diário',
+  '30d': 'Últimos 30 dias — diário',
+  '90d': 'Últimos 90 dias — semanal',
+  'all': 'Todo o histórico — mensal'
+};
+
+function setPeriod(btn, period) {
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  chart.data.labels = chartData[period].labels;
+  chart.data.datasets[0].data = chartData[period].data;
+  chart.update();
+  document.getElementById('chartSub').textContent = subLabels[period];
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>

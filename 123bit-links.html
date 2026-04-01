@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>123bit.app — Meus Links</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple-50:#EEEDFE;--purple-100:#CECBF6;--purple-200:#AFA9EC;
+    --purple-400:#7F77DD;--purple-600:#534AB7;--purple-800:#3C3489;
+    --gray-50:#F7F7F5;--gray-100:#EEEDE9;--gray-200:#D8D7D1;
+    --gray-400:#9E9D97;--gray-600:#5F5E5A;--gray-900:#1A1A18;
+    --green-50:#EAF3DE;--green-600:#3B6D11;--green-800:#27500A;
+    --amber-50:#FAEEDA;--amber-600:#854F0B;
+    --red-50:#FCEBEB;--red-600:#A32D2D;
+    --sidebar-w:220px;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#F4F3F0;color:var(--gray-900);display:flex;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+  /* SIDEBAR (idêntica ao dashboard) */
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:#fff;border-right:0.5px solid rgba(0,0,0,0.07);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:10}
+  .sidebar-logo{padding:20px 20px 16px;font-size:16px;font-weight:500;letter-spacing:-0.5px;color:var(--gray-900);text-decoration:none;border-bottom:0.5px solid rgba(0,0,0,0.06);display:block}
+  .sidebar-logo span{color:var(--purple-600)}
+  .sidebar-section{padding:16px 12px 8px;font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);font-size:13px;font-weight:400;color:var(--gray-600);cursor:pointer;text-decoration:none;margin:1px 8px;transition:background 0.12s,color 0.12s}
+  .nav-item:hover{background:var(--gray-50);color:var(--gray-900)}
+  .nav-item.active{background:var(--purple-50);color:var(--purple-800);font-weight:500}
+  .nav-item svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .sidebar-bottom{margin-top:auto;padding:12px 8px;border-top:0.5px solid rgba(0,0,0,0.06)}
+  .user-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.12s}
+  .user-card:hover{background:var(--gray-50)}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--purple-100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--purple-800);flex-shrink:0}
+  .user-name{font-size:13px;font-weight:500;color:var(--gray-900);line-height:1.2}
+  .user-plan{font-size:11px;color:var(--gray-400);font-weight:300}
+  .plan-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:99px;background:var(--purple-50);color:var(--purple-800);border:0.5px solid var(--purple-100);margin-left:6px}
+
+  /* MAIN */
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+  /* TOPBAR */
+  .topbar{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.07);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .topbar-title{font-size:15px;font-weight:500;color:var(--gray-900);letter-spacing:-0.3px}
+  .btn-new{font-family:inherit;font-size:13px;font-weight:500;color:#fff;background:var(--purple-600);border:none;padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s}
+  .btn-new:hover{background:var(--purple-800)}
+  .btn-new svg{width:14px;height:14px;stroke:#fff;stroke-width:2;fill:none}
+
+  /* CONTENT */
+  .content{padding:24px 28px;flex:1}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .search-wrap{flex:1;min-width:240px;position:relative}
+  .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--gray-400);stroke-width:1.5;fill:none;pointer-events:none}
+  .search-input{width:100%;height:38px;font-family:inherit;font-size:13px;color:var(--gray-900);background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:var(--radius-sm);padding:0 12px 0 34px;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+  .search-input::placeholder{color:var(--gray-400)}
+  .search-input:focus{border-color:rgba(83,74,183,0.35);box-shadow:0 0 0 3px rgba(83,74,183,0.08)}
+
+  .filter-btn{font-family:inherit;font-size:12px;font-weight:400;color:var(--gray-600);background:#fff;border:0.5px solid rgba(0,0,0,0.1);padding:0 12px;height:38px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.12s,border-color 0.12s;white-space:nowrap}
+  .filter-btn:hover{background:var(--gray-50)}
+  .filter-btn.active{background:var(--purple-50);color:var(--purple-800);border-color:var(--purple-100)}
+  .filter-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.5;fill:none}
+
+  select.filter-btn{appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239E9D97' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+
+  /* TAGS */
+  .tag-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:99px;cursor:pointer;border:0.5px solid transparent;transition:all 0.12s;letter-spacing:0.1px}
+  .tag.all{background:var(--gray-900);color:#fff}
+  .tag:not(.all){background:var(--gray-100);color:var(--gray-600);border-color:transparent}
+  .tag:not(.all):hover{background:var(--gray-200)}
+  .tag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+  /* STATS BAR */
+  .stats-bar{display:flex;gap:20px;padding:14px 0;border-bottom:0.5px solid rgba(0,0,0,0.07);margin-bottom:0;font-size:13px;color:var(--gray-600)}
+  .stats-bar strong{color:var(--gray-900);font-weight:500}
+
+  /* TABLE */
+  .table-wrap{background:#fff;border:0.5px solid rgba(0,0,0,0.07);border-radius:var(--radius-lg);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:11px;font-weight:500;color:var(--gray-400);text-align:left;padding:11px 16px;border-bottom:0.5px solid rgba(0,0,0,0.07);letter-spacing:0.2px;text-transform:uppercase;background:#FAFAF8;cursor:pointer;white-space:nowrap;user-select:none}
+  thead th:hover{color:var(--gray-600)}
+  thead th .sort-icon{display:inline;margin-left:4px;opacity:0.4}
+
+  tbody tr{transition:background 0.1s;cursor:default}
+  tbody tr:hover{background:var(--gray-50)}
+  tbody tr:hover .row-actions{opacity:1}
+  tbody td{padding:13px 16px;border-bottom:0.5px solid rgba(0,0,0,0.05);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* CHECKBOX */
+  input[type=checkbox]{width:14px;height:14px;accent-color:var(--purple-600);cursor:pointer}
+
+  /* LINK CELL */
+  .link-cell{display:flex;align-items:center;gap:10px}
+  .link-favicon{width:28px;height:28px;border-radius:6px;background:var(--gray-100);border:0.5px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .link-info{}
+  .link-short{font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-600);font-weight:500;display:flex;align-items:center;gap:5px}
+  .link-short .ext-icon{width:10px;height:10px;stroke:currentColor;stroke-width:1.5;fill:none;opacity:0.5}
+  .link-orig{font-size:12px;color:var(--gray-400);font-weight:300;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+  .link-title{font-size:12px;font-weight:500;color:var(--gray-900);margin-bottom:1px}
+
+  /* STATUS */
+  .status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px;white-space:nowrap}
+  .status-active{background:var(--green-50);color:var(--green-800)}
+  .status-expired{background:var(--amber-50);color:var(--amber-600)}
+  .status-off{background:var(--gray-100);color:var(--gray-600)}
+  .status-dot{width:5px;height:5px;border-radius:50%}
+  .dot-active{background:var(--green-600)}
+  .dot-expired{background:var(--amber-600)}
+  .dot-off{background:var(--gray-400)}
+
+  /* CLICKS BAR */
+  .clicks-cell{display:flex;align-items:center;gap:10px}
+  .clicks-num{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:48px;text-align:right}
+  .clicks-bar-wrap{width:60px;height:3px;background:var(--gray-100);border-radius:99px;overflow:hidden}
+  .clicks-bar{height:100%;background:var(--purple-400);border-radius:99px}
+
+  /* TAGS IN ROW */
+  .row-tags{display:flex;gap:4px;flex-wrap:wrap}
+  .row-tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px}
+
+  /* ACTIONS */
+  .row-actions{display:flex;gap:2px;opacity:0;transition:opacity 0.15s}
+  .act-btn{font-family:inherit;font-size:11px;color:var(--gray-500);background:none;border:0.5px solid transparent;padding:5px 9px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+  .act-btn svg{width:12px;height:12px;stroke:currentColor;stroke-width:1.5;fill:none}
+  .act-btn:hover{background:var(--gray-100);border-color:rgba(0,0,0,0.08);color:var(--gray-900)}
+  .act-btn.danger:hover{background:var(--red-50);color:var(--red-600);border-color:rgba(163,45,45,0.15)}
+
+  /* TOGGLE SWITCH */
+  .toggle{position:relative;width:30px;height:17px;cursor:pointer}
+  .toggle input{opacity:0;width:0;height:0}
+  .toggle-slider{position:absolute;inset:0;background:var(--gray-200);border-radius:99px;transition:background 0.2s}
+  .toggle-slider::before{content:'';position:absolute;width:13px;height:13px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+  .toggle input:checked + .toggle-slider{background:var(--purple-600)}
+  .toggle input:checked + .toggle-slider::before{transform:translateX(13px)}
+
+  /* PAGINATION */
+  .pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:0.5px solid rgba(0,0,0,0.07)}
+  .pg-info{font-size:12px;color:var(--gray-400)}
+  .pg-btns{display:flex;gap:4px}
+  .pg-btn{font-family:inherit;font-size:12px;color:var(--gray-600);background:none;border:0.5px solid rgba(0,0,0,0.08);padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s;min-width:32px;text-align:center}
+  .pg-btn:hover{background:var(--gray-100)}
+  .pg-btn.active{background:var(--purple-600);color:#fff;border-color:transparent}
+  .pg-btn:disabled{opacity:0.4;cursor:default}
+
+  /* BULK BAR */
+  .bulk-bar{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--gray-900);border-radius:var(--radius-md);padding:12px 20px;
+    display:flex;align-items:center;gap:16px;z-index:50;
+    box-shadow:0 8px 32px rgba(0,0,0,0.2);
+    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space:nowrap;
+  }
+  .bulk-bar.show{transform:translateX(-50%) translateY(0)}
+  .bulk-count{font-size:13px;color:rgba(255,255,255,0.6)}
+  .bulk-count strong{color:#fff}
+  .bulk-actions{display:flex;gap:8px}
+  .bulk-btn{font-family:inherit;font-size:12px;font-weight:500;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.12s;border:none}
+  .bulk-btn.outline{background:rgba(255,255,255,0.1);color:#fff}
+  .bulk-btn.outline:hover{background:rgba(255,255,255,0.18)}
+  .bulk-btn.danger{background:rgba(163,45,45,0.8);color:#fff}
+  .bulk-btn.danger:hover{background:rgba(163,45,45,1)}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-900);color:#fff;font-size:13px;padding:10px 20px;border-radius:99px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:200;white-space:nowrap;pointer-events:none}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  /* EMPTY STATE */
+  .empty{text-align:center;padding:64px 20px;color:var(--gray-400)}
+  .empty svg{width:40px;height:40px;stroke:var(--gray-200);stroke-width:1.5;fill:none;margin-bottom:16px}
+  .empty h3{font-size:15px;font-weight:500;color:var(--gray-600);margin-bottom:6px}
+  .empty p{font-size:13px;font-weight:300}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="123bit-landing.html" class="sidebar-logo">123<span>bit</span>.app</a>
+  <div class="sidebar-section">Menu</div>
+  <a class="nav-item" href="123bit-dashboard.html"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+  <a class="nav-item active" href="123bit-links.html"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Meus Links</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>Analytics</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>QR Codes</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Domínios</a>
+  <div class="sidebar-section">Conta</div>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Perfil</a>
+  <a class="nav-item" href="123bit-settings.html"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Configurações</a>
+  <a class="nav-item" href="123bit-settings.html"><svg viewBox="0 0 24 24"><path d="M8 9l3 3-3 3"/><path d="M13 15h3"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>API Keys</a>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">JD</div>
+      <div>
+        <div class="user-name">João Dev <span class="plan-badge">Pro</span></div>
+        <div class="user-plan">joao@exemplo.com</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title">Meus Links</span>
+    <button class="btn-new" onclick="toast('Abrindo modal...')">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Novo link
+    </button>
+  </div>
+
+  <div class="content">
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-input" type="text" placeholder="Buscar por título, URL ou alias..." id="searchInput" oninput="filterLinks()" />
+      </div>
+      <select class="filter-btn" onchange="filterLinks()" id="statusFilter">
+        <option value="">Todos os status</option>
+        <option value="Ativo">Ativos</option>
+        <option value="Expirado">Expirados</option>
+        <option value="Inativo">Inativos</option>
+      </select>
+      <select class="filter-btn" onchange="filterLinks()" id="sortFilter">
+        <option value="clicks">Ordenar: Cliques</option>
+        <option value="date">Ordenar: Mais recente</option>
+        <option value="alpha">Ordenar: A-Z</option>
+      </select>
+    </div>
+
+    <!-- TAGS -->
+    <div class="tag-row">
+      <div class="tag all" onclick="setTag('all',this)">Todos <span style="opacity:0.6;font-weight:400">284</span></div>
+      <div class="tag" onclick="setTag('marketing',this)"><span class="tag-dot" style="background:#7F77DD"></span>Marketing</div>
+      <div class="tag" onclick="setTag('social',this)"><span class="tag-dot" style="background:#1D9E75"></span>Social</div>
+      <div class="tag" onclick="setTag('produto',this)"><span class="tag-dot" style="background:#EF9F27"></span>Produto</div>
+      <div class="tag" onclick="setTag('docs',this)"><span class="tag-dot" style="background:#378ADD"></span>Docs</div>
+      <div class="tag" onclick="setTag('campanha',this)"><span class="tag-dot" style="background:#D4537E"></span>Campanha</div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <div class="stats-bar" style="padding:12px 16px;border-bottom:0.5px solid rgba(0,0,0,0.07)">
+        <span><strong id="count">7</strong> links encontrados</span>
+        <span><strong>12.847</strong> cliques no total</span>
+        <span><strong>5</strong> ativos</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"/></th>
+            <th>Link <span class="sort-icon">↕</span></th>
+            <th>Tags</th>
+            <th>Status</th>
+            <th style="text-align:right">Cliques <span class="sort-icon">↓</span></th>
+            <th>Criado em</th>
+            <th style="width:30px">Ativo</th>
+            <th style="width:130px"></th>
+          </tr>
+        </thead>
+        <tbody id="linksBody"></tbody>
+      </table>
+      <div class="pagination">
+        <span class="pg-info">Mostrando 1–7 de 284 links</span>
+        <div class="pg-btns">
+          <button class="pg-btn" disabled>←</button>
+          <button class="pg-btn active">1</button>
+          <button class="pg-btn">2</button>
+          <button class="pg-btn">3</button>
+          <span style="font-size:12px;color:var(--gray-400);padding:0 4px">...</span>
+          <button class="pg-btn">29</button>
+          <button class="pg-btn">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- BULK BAR -->
+<div class="bulk-bar" id="bulkBar">
+  <div class="bulk-count"><strong id="bulkCount">0</strong> selecionados</div>
+  <div class="bulk-actions">
+    <button class="bulk-btn outline" onclick="toast('Links exportados!')">Exportar</button>
+    <button class="bulk-btn outline" onclick="toast('Links desativados!')">Desativar</button>
+    <button class="bulk-btn danger" onclick="toast('Links excluídos!')">Excluir</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const links = [
+  { id:1, short:'123bit.app/launch24', title:'Lançamento Produto 2024', orig:'notion.so/minha-empresa/lancamento-produto-2024', tags:['Marketing','Produto'], status:'Ativo', clicks:2431, date:'12 Mar 2026', active:true, emoji:'📋' },
+  { id:2, short:'123bit.app/promo-bf', title:'Promo Black Friday', orig:'loja.exemplo.com.br/black-friday-2024-cupom-desconto', tags:['Campanha'], status:'Expirado', clicks:5102, date:'8 Nov 2025', active:false, emoji:'🛍️' },
+  { id:3, short:'123bit.app/bio', title:'Bio Instagram', orig:'instagram.com/meuperfil', tags:['Social'], status:'Ativo', clicks:891, date:'1 Fev 2026', active:true, emoji:'📸' },
+  { id:4, short:'123bit.app/ebook', title:'Ebook Gratuito', orig:'drive.google.com/file/d/1xYzAbc123/view', tags:['Marketing'], status:'Inativo', clicks:347, date:'5 Jan 2026', active:false, emoji:'📖' },
+  { id:5, short:'123bit.app/api-docs', title:'Documentação API', orig:'docs.minha-empresa.com/api/v2/referencia-completa', tags:['Docs'], status:'Ativo', clicks:214, date:'20 Mar 2026', active:true, emoji:'📄' },
+  { id:6, short:'123bit.app/webinar', title:'Webinar Março', orig:'zoom.us/j/99887766554433?pwd=xyzabc', tags:['Marketing','Social'], status:'Ativo', clicks:1024, date:'15 Mar 2026', active:true, emoji:'🎥' },
+  { id:7, short:'123bit.app/suporte', title:'Página de Suporte', orig:'ajuda.minha-empresa.com/central-de-suporte', tags:['Docs'], status:'Ativo', clicks:588, date:'3 Mar 2026', active:true, emoji:'💬' },
+];
+
+const tagColors = {
+  'Marketing':'background:#EEEDFE;color:#3C3489',
+  'Produto':'background:#FAEEDA;color:#854F0B',
+  'Campanha':'background:#FBEAF0;color:#72243E',
+  'Social':'background:#E1F5EE;color:#085041',
+  'Docs':'background:#E6F1FB;color:#0C447C',
+};
+const maxClicks = Math.max(...links.map(l=>l.clicks));
+let selectedIds = new Set();
+let activeTag = 'all';
+
+function renderLinks(data) {
+  const tbody = document.getElementById('linksBody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h3>Nenhum link encontrado</h3>
+      <p>Tente ajustar os filtros ou criar um novo link.</p>
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(l => {
+    const pct = Math.round((l.clicks / maxClicks) * 100);
+    const statusClass = l.status === 'Ativo' ? 'status-active' : l.status === 'Expirado' ? 'status-expired' : 'status-off';
+    const dotClass = l.status === 'Ativo' ? 'dot-active' : l.status === 'Expirado' ? 'dot-expired' : 'dot-off';
+    const checked = selectedIds.has(l.id) ? 'checked' : '';
+    const tags = l.tags.map(t => `<span class="row-tag" style="${tagColors[t]||''}">${t}</span>`).join('');
+    return `<tr>
+      <td><input type="checkbox" ${checked} onchange="toggleRow(${l.id},this)"/></td>
+      <td>
+        <div class="link-cell">
+          <div class="link-favicon">${l.emoji}</div>
+          <div class="link-info">
+            <div class="link-title">${l.title}</div>
+            <div class="link-short">
+              ${l.short}
+              <svg class="ext-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </div>
+            <div class="link-orig">${l.orig}</div>
+          </div>
+        </div>
+      </td>
+      <td><div class="row-tags">${tags}</div></td>
+      <td><span class="status-badge ${statusClass}"><span class="status-dot ${dotClass}"></span>${l.status}</span></td>
+      <td>
+        <div class="clicks-cell" style="justify-content:flex-end">
+          <div class="clicks-bar-wrap"><div class="clicks-bar" style="width:${pct}%"></div></div>
+          <div class="clicks-num">${l.clicks.toLocaleString('pt-BR')}</div>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--gray-400);white-space:nowrap">${l.date}</td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${l.active?'checked':''} onchange="toggleActive(${l.id},this)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="act-btn" onclick="toast('Link copiado!')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="act-btn" onclick="window.location='123bit-link-detail.html'">
+            <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>
+            Analytics
+          </button>
+          <button class="act-btn" onclick="toast('Abrindo QR Code...')">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>
+            QR
+          </button>
+          <button class="act-btn danger" onclick="deleteLink(${l.id})">
+            <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterLinks() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  const sort = document.getElementById('sortFilter').value;
+  let data = links.filter(l => {
+    const matchQ = !q || l.title.toLowerCase().includes(q) || l.short.toLowerCase().includes(q) || l.orig.toLowerCase().includes(q);
+    const matchStatus = !status || l.status === status;
+    const matchTag = activeTag === 'all' || l.tags.map(t=>t.toLowerCase()).includes(activeTag.toLowerCase());
+    return matchQ && matchStatus && matchTag;
+  });
+  if (sort === 'clicks') data.sort((a,b)=>b.clicks-a.clicks);
+  else if (sort === 'alpha') data.sort((a,b)=>a.title.localeCompare(b.title));
+  document.getElementById('count').textContent = data.length;
+  renderLinks(data);
+}
+
+function setTag(tag, el) {
+  document.querySelectorAll('.tag').forEach(t=>{t.classList.remove('all');t.style.background='';t.style.color=''});
+  el.classList.add('all');
+  activeTag = tag;
+  filterLinks();
+}
+
+function toggleAll(cb) {
+  selectedIds.clear();
+  if (cb.checked) links.forEach(l=>selectedIds.add(l.id));
+  filterLinks();
+  updateBulk();
+}
+function toggleRow(id, cb) {
+  if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+  updateBulk();
+}
+function updateBulk() {
+  const bar = document.getElementById('bulkBar');
+  document.getElementById('bulkCount').textContent = selectedIds.size;
+  if (selectedIds.size > 0) bar.classList.add('show'); else bar.classList.remove('show');
+}
+function toggleActive(id, cb) {
+  const l = links.find(x=>x.id===id);
+  if (l) { l.active = cb.checked; toast(l.active ? 'Link ativado!' : 'Link desativado!'); }
+}
+function deleteLink(id) {
+  const i = links.findIndex(x=>x.id===id);
+  if (i>-1) { links.splice(i,1); filterLinks(); toast('Link excluído!'); }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+renderLinks(links);
+</script>
+</body>
+</html>

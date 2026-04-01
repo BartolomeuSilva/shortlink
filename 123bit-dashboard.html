@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>123bit.app — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --purple-50:#EEEDFE;--purple-100:#CECBF6;--purple-200:#AFA9EC;
+    --purple-400:#7F77DD;--purple-600:#534AB7;--purple-800:#3C3489;
+    --gray-50:#F7F7F5;--gray-100:#EEEDE9;--gray-200:#D8D7D1;
+    --gray-400:#9E9D97;--gray-600:#5F5E5A;--gray-900:#1A1A18;
+    --green-50:#EAF3DE;--green-600:#3B6D11;--green-800:#27500A;
+    --amber-50:#FAEEDA;--amber-600:#854F0B;
+    --red-50:#FCEBEB;--red-600:#A32D2D;
+    --sidebar-w: 220px;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#F4F3F0;color:var(--gray-900);display:flex;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+  /* SIDEBAR */
+  .sidebar{
+    width:var(--sidebar-w);flex-shrink:0;background:#fff;
+    border-right:0.5px solid rgba(0,0,0,0.07);
+    display:flex;flex-direction:column;
+    position:fixed;top:0;left:0;bottom:0;z-index:10;
+    padding:0;
+  }
+  .sidebar-logo{
+    padding:20px 20px 16px;
+    font-size:16px;font-weight:500;letter-spacing:-0.5px;
+    color:var(--gray-900);text-decoration:none;
+    border-bottom:0.5px solid rgba(0,0,0,0.06);
+    display:block;
+  }
+  .sidebar-logo span{color:var(--purple-600)}
+
+  .sidebar-section{padding:16px 12px 8px;font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)}
+
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;border-radius:var(--radius-sm);
+    font-size:13px;font-weight:400;color:var(--gray-600);
+    cursor:pointer;text-decoration:none;margin:1px 8px;
+    transition:background 0.12s,color 0.12s;
+  }
+  .nav-item:hover{background:var(--gray-50);color:var(--gray-900)}
+  .nav-item.active{background:var(--purple-50);color:var(--purple-800);font-weight:500}
+  .nav-item svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+  .sidebar-bottom{
+    margin-top:auto;padding:12px 8px;
+    border-top:0.5px solid rgba(0,0,0,0.06);
+  }
+  .user-card{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 10px;border-radius:var(--radius-sm);
+    cursor:pointer;transition:background 0.12s;
+  }
+  .user-card:hover{background:var(--gray-50)}
+  .avatar{
+    width:30px;height:30px;border-radius:50%;
+    background:var(--purple-100);display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:500;color:var(--purple-800);flex-shrink:0;
+  }
+  .user-name{font-size:13px;font-weight:500;color:var(--gray-900);line-height:1.2}
+  .user-plan{font-size:11px;color:var(--gray-400);font-weight:300}
+
+  .plan-badge{
+    display:inline-block;font-size:10px;font-weight:500;
+    padding:2px 7px;border-radius:99px;
+    background:var(--purple-50);color:var(--purple-800);
+    border:0.5px solid var(--purple-100);margin-left:6px;
+  }
+
+  /* MAIN */
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+  /* TOPBAR */
+  .topbar{
+    background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.07);
+    padding:0 28px;height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:5;
+  }
+  .topbar-title{font-size:15px;font-weight:500;color:var(--gray-900);letter-spacing:-0.3px}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+
+  .btn-new{
+    font-family:inherit;font-size:13px;font-weight:500;
+    color:#fff;background:var(--purple-600);
+    border:none;padding:8px 16px;border-radius:var(--radius-sm);
+    cursor:pointer;display:flex;align-items:center;gap:6px;
+    transition:background 0.15s;letter-spacing:-0.1px;
+  }
+  .btn-new:hover{background:var(--purple-800)}
+  .btn-new svg{width:14px;height:14px;stroke:#fff;stroke-width:2;fill:none}
+
+  .btn-period{
+    font-family:inherit;font-size:12px;font-weight:400;
+    color:var(--gray-600);background:var(--gray-100);
+    border:0.5px solid rgba(0,0,0,0.08);
+    padding:7px 12px;border-radius:var(--radius-sm);
+    cursor:pointer;transition:background 0.12s;letter-spacing:-0.1px;
+  }
+  .btn-period:hover{background:var(--gray-200)}
+  .btn-period.active{background:#fff;color:var(--gray-900);border-color:rgba(0,0,0,0.15)}
+
+  /* CONTENT */
+  .content{padding:28px;flex:1}
+
+  /* METRICS */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+  .metric{
+    background:#fff;border:0.5px solid rgba(0,0,0,0.07);
+    border-radius:var(--radius-lg);padding:20px;
+  }
+  .metric-label{font-size:12px;color:var(--gray-400);font-weight:400;margin-bottom:8px;letter-spacing:-0.1px}
+  .metric-value{font-size:28px;font-weight:300;letter-spacing:-1.5px;color:var(--gray-900);line-height:1;margin-bottom:6px}
+  .metric-delta{font-size:12px;font-weight:400;display:flex;align-items:center;gap:4px}
+  .delta-up{color:var(--green-600)}
+  .delta-down{color:var(--red-600)}
+  .delta-dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+
+  /* CHART + GEO */
+  .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:24px}
+  .card{background:#fff;border:0.5px solid rgba(0,0,0,0.07);border-radius:var(--radius-lg);padding:20px}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .card-title{font-size:13px;font-weight:500;color:var(--gray-900);letter-spacing:-0.2px}
+  .card-sub{font-size:12px;color:var(--gray-400);font-weight:300}
+
+  .period-tabs{display:flex;gap:2px}
+  .ptab{
+    font-family:inherit;font-size:11px;font-weight:400;
+    color:var(--gray-400);background:none;border:none;
+    padding:5px 9px;border-radius:4px;cursor:pointer;
+    transition:background 0.12s,color 0.12s;
+  }
+  .ptab:hover{background:var(--gray-50);color:var(--gray-900)}
+  .ptab.active{background:var(--gray-100);color:var(--gray-900);font-weight:500}
+
+  /* GEO LIST */
+  .geo-list{display:flex;flex-direction:column;gap:10px}
+  .geo-item{display:flex;align-items:center;gap:10px}
+  .geo-flag{font-size:16px;width:24px;text-align:center;flex-shrink:0}
+  .geo-country{font-size:13px;color:var(--gray-900);font-weight:400;flex:1}
+  .geo-bar-wrap{flex:2;height:4px;background:var(--gray-100);border-radius:99px;overflow:hidden}
+  .geo-bar{height:100%;background:var(--purple-400);border-radius:99px}
+  .geo-pct{font-size:12px;color:var(--gray-400);min-width:36px;text-align:right;font-family:'DM Mono',monospace}
+
+  /* RECENT LINKS */
+  .links-table{width:100%;border-collapse:collapse}
+  .links-table th{
+    font-size:11px;font-weight:500;color:var(--gray-400);
+    text-align:left;padding:8px 12px;
+    border-bottom:0.5px solid rgba(0,0,0,0.07);
+    letter-spacing:0.2px;text-transform:uppercase;
+  }
+  .links-table td{
+    font-size:13px;color:var(--gray-900);
+    padding:11px 12px;border-bottom:0.5px solid rgba(0,0,0,0.05);
+    vertical-align:middle;
+  }
+  .links-table tr:last-child td{border-bottom:none}
+  .links-table tr:hover td{background:var(--gray-50)}
+
+  .link-short{font-family:'DM Mono',monospace;font-size:12px;color:var(--purple-600);font-weight:500}
+  .link-orig{font-size:12px;color:var(--gray-400);font-weight:300;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .link-clicks{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+
+  .status-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px;
+  }
+  .status-active{background:var(--green-50);color:var(--green-800)}
+  .status-expired{background:var(--amber-50);color:var(--amber-600)}
+  .status-off{background:var(--gray-100);color:var(--gray-600)}
+
+  .status-dot{width:5px;height:5px;border-radius:50%}
+  .dot-active{background:var(--green-600)}
+  .dot-expired{background:var(--amber-600)}
+  .dot-off{background:var(--gray-400)}
+
+  .action-btn{
+    font-family:inherit;font-size:11px;color:var(--gray-400);
+    background:none;border:none;cursor:pointer;padding:4px 6px;
+    border-radius:4px;transition:background 0.12s,color 0.12s;
+  }
+  .action-btn:hover{background:var(--gray-100);color:var(--gray-900)}
+
+  /* DEVICES */
+  .device-list{display:flex;flex-direction:column;gap:12px}
+  .device-item{display:flex;align-items:center;gap:10px}
+  .device-icon{width:28px;height:28px;border-radius:6px;background:var(--gray-50);border:0.5px solid rgba(0,0,0,0.07);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .device-icon svg{width:13px;height:13px;stroke:var(--gray-600);stroke-width:1.5;fill:none}
+  .device-name{font-size:13px;color:var(--gray-900);flex:1}
+  .device-pct{font-size:13px;font-weight:500;color:var(--gray-900);font-family:'DM Mono',monospace}
+  .device-bar-wrap{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gray-100);border-radius:0 0 var(--radius-lg) var(--radius-lg);overflow:hidden}
+
+  /* MODAL */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(0,0,0,0.3);
+    backdrop-filter:blur(4px);z-index:100;
+    display:none;align-items:center;justify-content:center;
+  }
+  .modal-bg.open{display:flex}
+  .modal{
+    background:#fff;border-radius:var(--radius-lg);padding:28px;
+    width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.15);
+    animation:modalIn 0.2s ease;
+  }
+  @keyframes modalIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .modal h2{font-size:17px;font-weight:500;letter-spacing:-0.5px;margin-bottom:20px}
+  .modal-field{margin-bottom:14px}
+  .modal-field label{display:block;font-size:12px;font-weight:500;color:var(--gray-600);margin-bottom:6px}
+  .modal-field input{width:100%;height:40px;font-family:inherit;font-size:14px;font-weight:300;color:var(--gray-900);background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:var(--radius-sm);padding:0 12px;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+  .modal-field input:focus{border-color:rgba(83,74,183,0.4);box-shadow:0 0 0 3px rgba(83,74,183,0.08)}
+  .modal-field input::placeholder{color:var(--gray-400)}
+  .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+  .btn-cancel{font-family:inherit;font-size:13px;font-weight:400;color:var(--gray-600);background:none;border:0.5px solid rgba(0,0,0,0.1);padding:9px 18px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.12s}
+  .btn-cancel:hover{background:var(--gray-50)}
+  .btn-create{font-family:inherit;font-size:13px;font-weight:500;color:#fff;background:var(--purple-600);border:none;padding:9px 22px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.15s}
+  .btn-create:hover{background:var(--purple-800)}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-900);color:#fff;font-size:13px;padding:10px 20px;border-radius:99px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:200;white-space:nowrap;pointer-events:none}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="123bit-landing.html" class="sidebar-logo">123<span>bit</span>.app</a>
+
+  <div class="sidebar-section">Menu</div>
+  <a class="nav-item active" href="123bit-dashboard.html">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item" href="123bit-links.html">
+    <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Meus Links
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>
+    Analytics
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    QR Codes
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+    Domínios
+  </a>
+
+  <div class="sidebar-section">Conta</div>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Perfil
+  </a>
+  <a class="nav-item" href="123bit-settings.html">
+    <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    Configurações
+  </a>
+  <a class="nav-item" href="123bit-settings.html">
+    <svg viewBox="0 0 24 24"><path d="M8 9l3 3-3 3"/><path d="M13 15h3"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+    API Keys
+  </a>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">JD</div>
+      <div>
+        <div class="user-name">João Dev <span class="plan-badge">Pro</span></div>
+        <div class="user-plan">joao@exemplo.com</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title">Dashboard</span>
+    <div class="topbar-right">
+      <div style="display:flex;gap:3px">
+        <button class="ptab active" onclick="setPeriod(this,'7d')">7d</button>
+        <button class="ptab" onclick="setPeriod(this,'30d')">30d</button>
+        <button class="ptab" onclick="setPeriod(this,'90d')">90d</button>
+      </div>
+      <button class="btn-new" onclick="openModal()">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo link
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Total de cliques</div>
+        <div class="metric-value" id="m-clicks">12.847</div>
+        <div class="metric-delta delta-up">
+          <span class="delta-dot" style="background:var(--green-600)"></span>
+          +18% vs período anterior
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Links ativos</div>
+        <div class="metric-value" id="m-links">284</div>
+        <div class="metric-delta delta-up">
+          <span class="delta-dot" style="background:var(--green-600)"></span>
+          +12 novos esta semana
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Taxa de cliques</div>
+        <div class="metric-value" id="m-ctr">3.2%</div>
+        <div class="metric-delta delta-down">
+          <span class="delta-dot" style="background:var(--red-600)"></span>
+          -0.4% vs período anterior
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Domínios ativos</div>
+        <div class="metric-value">1</div>
+        <div class="metric-delta" style="color:var(--gray-400)">
+          <span class="delta-dot" style="background:var(--gray-400)"></span>
+          meudominio.com
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART + GEO -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cliques por período</div>
+            <div class="card-sub">Últimos 7 dias</div>
+          </div>
+          <div class="period-tabs">
+            <button class="ptab active" onclick="updateChart(this,'7d')">7d</button>
+            <button class="ptab" onclick="updateChart(this,'30d')">30d</button>
+            <button class="ptab" onclick="updateChart(this,'90d')">90d</button>
+          </div>
+        </div>
+        <canvas id="clicksChart" height="180"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Top países</div>
+          <div class="card-sub">por cliques</div>
+        </div>
+        <div class="geo-list">
+          <div class="geo-item">
+            <div class="geo-flag">🇧🇷</div>
+            <div class="geo-country">Brasil</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:72%"></div></div>
+            <div class="geo-pct">72%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇵🇹</div>
+            <div class="geo-country">Portugal</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:11%"></div></div>
+            <div class="geo-pct">11%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇺🇸</div>
+            <div class="geo-country">EUA</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:7%"></div></div>
+            <div class="geo-pct">7%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇦🇷</div>
+            <div class="geo-country">Argentina</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:5%"></div></div>
+            <div class="geo-pct">5%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🇲🇽</div>
+            <div class="geo-country">México</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:3%"></div></div>
+            <div class="geo-pct">3%</div>
+          </div>
+          <div class="geo-item">
+            <div class="geo-flag">🌍</div>
+            <div class="geo-country">Outros</div>
+            <div class="geo-bar-wrap"><div class="geo-bar" style="width:2%"></div></div>
+            <div class="geo-pct">2%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT LINKS + DEVICES -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Links recentes</div>
+          <a href="#" style="font-size:12px;color:var(--purple-600);text-decoration:none;font-weight:500">Ver todos →</a>
+        </div>
+        <table class="links-table">
+          <thead>
+            <tr>
+              <th>Link</th>
+              <th>Status</th>
+              <th style="text-align:right">Cliques</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="link-short">123bit.app/launch24</div>
+                <div class="link-orig">notion.so/minha-empresa/lancamento-produto</div>
+              </td>
+              <td><span class="status-badge status-active"><span class="status-dot dot-active"></span>Ativo</span></td>
+              <td style="text-align:right" class="link-clicks">2.431</td>
+              <td>
+                <button class="action-btn" onclick="toast('Link copiado!')">Copiar</button>
+                <button class="action-btn">Editar</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="link-short">123bit.app/promo-bf</div>
+                <div class="link-orig">loja.exemplo.com.br/black-friday-2024</div>
+              </td>
+              <td><span class="status-badge status-expired"><span class="status-dot dot-expired"></span>Expirado</span></td>
+              <td style="text-align:right" class="link-clicks">5.102</td>
+              <td>
+                <button class="action-btn" onclick="toast('Link copiado!')">Copiar</button>
+                <button class="action-btn">Editar</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="link-short">123bit.app/bio</div>
+                <div class="link-orig">instagram.com/meuperfil</div>
+              </td>
+              <td><span class="status-badge status-active"><span class="status-dot dot-active"></span>Ativo</span></td>
+              <td style="text-align:right" class="link-clicks">891</td>
+              <td>
+                <button class="action-btn" onclick="toast('Link copiado!')">Copiar</button>
+                <button class="action-btn">Editar</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="link-short">123bit.app/ebook</div>
+                <div class="link-orig">drive.google.com/file/d/1xYz.../view</div>
+              </td>
+              <td><span class="status-badge status-off"><span class="status-dot dot-off"></span>Inativo</span></td>
+              <td style="text-align:right" class="link-clicks">347</td>
+              <td>
+                <button class="action-btn" onclick="toast('Link copiado!')">Copiar</button>
+                <button class="action-btn">Editar</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="link-short">123bit.app/api-docs</div>
+                <div class="link-orig">docs.minha-empresa.com/api/v2/referencia</div>
+              </td>
+              <td><span class="status-badge status-active"><span class="status-dot dot-active"></span>Ativo</span></td>
+              <td style="text-align:right" class="link-clicks">214</td>
+              <td>
+                <button class="action-btn" onclick="toast('Link copiado!')">Copiar</button>
+                <button class="action-btn">Editar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Dispositivos</div>
+          <div class="card-sub">esta semana</div>
+        </div>
+        <div style="height:160px;margin-bottom:20px">
+          <canvas id="deviceChart"></canvas>
+        </div>
+        <div class="device-list">
+          <div class="device-item">
+            <div class="device-icon">
+              <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+            </div>
+            <div class="device-name">Mobile</div>
+            <div class="device-pct">58%</div>
+          </div>
+          <div class="device-item">
+            <div class="device-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>
+            </div>
+            <div class="device-name">Desktop</div>
+            <div class="device-pct">33%</div>
+          </div>
+          <div class="device-item">
+            <div class="device-icon">
+              <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+            </div>
+            <div class="device-name">Tablet</div>
+            <div class="device-pct">9%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL NOVO LINK -->
+<div class="modal-bg" id="modalBg" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <h2>Criar novo link</h2>
+    <div class="modal-field">
+      <label>URL de destino *</label>
+      <input type="url" placeholder="https://exemplo.com/minha-pagina-longa" id="modal-url"/>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Alias personalizado</label>
+        <input type="text" placeholder="meu-link"/>
+      </div>
+      <div class="modal-field">
+        <label>Expira em</label>
+        <input type="date"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Título</label>
+        <input type="text" placeholder="Nome do link"/>
+      </div>
+      <div class="modal-field">
+        <label>Senha (opcional)</label>
+        <input type="password" placeholder="••••••••"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-create" onclick="createLink()">Criar link →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// CHART: CLICKS
+const ctx = document.getElementById('clicksChart').getContext('2d');
+const datasets = {
+  '7d': {
+    labels: ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],
+    data: [820, 1140, 940, 1380, 1720, 1250, 980]
+  },
+  '30d': {
+    labels: Array.from({length:30},(_,i)=>`${i+1}`),
+    data: Array.from({length:30},()=>Math.floor(300+Math.random()*900))
+  },
+  '90d': {
+    labels: Array.from({length:12},(_,i)=>`Sem ${i+1}`),
+    data: Array.from({length:12},()=>Math.floor(3000+Math.random()*5000))
+  }
+};
+
+const clicksChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: datasets['7d'].labels,
+    datasets: [{
+      label: 'Cliques',
+      data: datasets['7d'].data,
+      borderColor: '#534AB7',
+      backgroundColor: 'rgba(83,74,183,0.06)',
+      borderWidth: 1.5,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 3,
+      pointBackgroundColor: '#534AB7',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1.5,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor: '#1A1A18', titleColor: '#fff', bodyColor: 'rgba(255,255,255,0.7)',
+      padding: 10, cornerRadius: 8, titleFont: { family: 'DM Sans', size: 12, weight: '500' },
+      bodyFont: { family: 'DM Sans', size: 12 },
+      callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString('pt-BR')} cliques` }
+    }},
+    scales: {
+      x: { grid: { display: false }, border: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9E9D97' } },
+      y: { grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, border: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9E9D97', callback: v => v.toLocaleString('pt-BR') } }
+    }
+  }
+});
+
+function updateChart(btn, period) {
+  document.querySelectorAll('.card .ptab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  clicksChart.data.labels = datasets[period].labels;
+  clicksChart.data.datasets[0].data = datasets[period].data;
+  clicksChart.update();
+}
+
+// DEVICE DONUT
+const dCtx = document.getElementById('deviceChart').getContext('2d');
+new Chart(dCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Mobile','Desktop','Tablet'],
+    datasets: [{
+      data: [58, 33, 9],
+      backgroundColor: ['#534AB7','#AFA9EC','#EEEDFE'],
+      borderWidth: 0, hoverOffset: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1A1A18', titleColor: '#fff', bodyColor: 'rgba(255,255,255,0.7)',
+        padding: 10, cornerRadius: 8,
+        titleFont: { family: 'DM Sans', size: 12, weight: '500' },
+        bodyFont: { family: 'DM Sans', size: 12 },
+        callbacks: { label: ctx => ` ${ctx.parsed}%` }
+      }
+    }
+  }
+});
+
+// PERIOD (topbar)
+function setPeriod(btn, period) {
+  document.querySelectorAll('.topbar .ptab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const map = { '7d': {clicks:'12.847',links:'284',ctr:'3.2%'}, '30d': {clicks:'48.312',links:'284',ctr:'3.8%'}, '90d': {clicks:'131.940',links:'284',ctr:'4.1%'} };
+  const d = map[period];
+  document.getElementById('m-clicks').textContent = d.clicks;
+  document.getElementById('m-links').textContent = d.links;
+  document.getElementById('m-ctr').textContent = d.ctr;
+}
+
+// MODAL
+function openModal(){ document.getElementById('modalBg').classList.add('open') }
+function closeModal(){ document.getElementById('modalBg').classList.remove('open') }
+function closeModalOnBg(e){ if(e.target===e.currentTarget) closeModal() }
+function createLink(){
+  const url = document.getElementById('modal-url').value.trim();
+  if(!url){ document.getElementById('modal-url').style.borderColor='#E24B4A'; return; }
+  closeModal();
+  toast('Link criado com sucesso!');
+}
+
+// TOAST
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>123bit.app — Encurtador de URLs com Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple-50:#EEEDFE;--purple-100:#CECBF6;--purple-200:#AFA9EC;
+    --purple-400:#7F77DD;--purple-600:#534AB7;--purple-800:#3C3489;--purple-900:#26215C;
+    --gray-50:#F7F7F5;--gray-100:#EEEDE9;--gray-200:#D8D7D1;
+    --gray-400:#9E9D97;--gray-600:#5F5E5A;--gray-900:#1A1A18;
+    --green-600:#3B6D11;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:24px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#FAFAF8;color:var(--gray-900);-webkit-font-smoothing:antialiased}
+
+  /* NAV */
+  nav {
+    position:sticky;top:0;z-index:50;
+    background:rgba(250,250,248,0.85);backdrop-filter:blur(12px);
+    border-bottom:0.5px solid rgba(0,0,0,0.07);
+    padding:0 40px;height:60px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .nav-logo{font-size:17px;font-weight:500;letter-spacing:-0.5px;color:var(--gray-900);text-decoration:none}
+  .nav-logo span{color:var(--purple-600)}
+  .nav-links{display:flex;align-items:center;gap:6px}
+  .nav-link{font-size:13px;font-weight:400;color:var(--gray-600);text-decoration:none;padding:7px 12px;border-radius:var(--radius-sm);transition:background 0.12s,color 0.12s}
+  .nav-link:hover{background:var(--gray-100);color:var(--gray-900)}
+  .nav-actions{display:flex;align-items:center;gap:8px}
+  .btn-ghost{font-family:inherit;font-size:13px;font-weight:400;color:var(--gray-600);background:none;border:0.5px solid rgba(0,0,0,0.1);padding:7px 16px;border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;transition:background 0.12s}
+  .btn-ghost:hover{background:var(--gray-100)}
+  .btn-primary{font-family:inherit;font-size:13px;font-weight:500;color:#fff;background:var(--purple-600);border:none;padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;transition:background 0.15s}
+  .btn-primary:hover{background:var(--purple-800)}
+
+  /* HERO */
+  .hero{
+    padding:100px 40px 80px;
+    max-width:1100px;margin:0 auto;
+    text-align:center;
+  }
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--purple-50);color:var(--purple-800);
+    font-size:12px;font-weight:500;padding:5px 14px;border-radius:99px;
+    border:0.5px solid var(--purple-100);margin-bottom:28px;letter-spacing:0.1px;
+  }
+  .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--purple-400)}
+  .hero h1{
+    font-size:clamp(36px,5vw,64px);font-weight:300;letter-spacing:-2.5px;
+    color:var(--gray-900);line-height:1.1;margin-bottom:20px;
+  }
+  .hero h1 em{font-style:italic;color:var(--purple-600)}
+  .hero p{
+    font-size:17px;font-weight:300;color:var(--gray-400);
+    line-height:1.65;max-width:520px;margin:0 auto 40px;
+  }
+
+  /* SHORTENER INPUT */
+  .shortener-box{
+    background:#fff;border:0.5px solid rgba(0,0,0,0.1);
+    border-radius:var(--radius-lg);padding:6px 6px 6px 16px;
+    display:flex;align-items:center;gap:8px;
+    max-width:600px;margin:0 auto 16px;
+    box-shadow:0 4px 24px rgba(0,0,0,0.06);
+  }
+  .shortener-input{
+    flex:1;font-family:inherit;font-size:14px;font-weight:300;
+    color:var(--gray-900);background:none;border:none;outline:none;
+    min-width:0;
+  }
+  .shortener-input::placeholder{color:var(--gray-400)}
+  .btn-shorten{
+    font-family:inherit;font-size:13px;font-weight:500;
+    color:#fff;background:var(--purple-600);
+    border:none;padding:10px 22px;border-radius:var(--radius-md);
+    cursor:pointer;white-space:nowrap;transition:background 0.15s;
+    flex-shrink:0;
+  }
+  .btn-shorten:hover{background:var(--purple-800)}
+
+  .hero-note{font-size:12px;color:var(--gray-400);font-weight:300}
+  .hero-note a{color:var(--purple-600);text-decoration:none}
+  .hero-note a:hover{text-decoration:underline}
+
+  /* RESULT BOX */
+  .result-box{
+    max-width:600px;margin:0 auto;
+    background:var(--purple-50);border:0.5px solid var(--purple-100);
+    border-radius:var(--radius-lg);padding:16px 20px;
+    display:none;align-items:center;gap:12px;margin-top:12px;
+  }
+  .result-box.show{display:flex}
+  .result-short{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--purple-800);flex:1}
+  .btn-copy{
+    font-family:inherit;font-size:12px;font-weight:500;
+    color:var(--purple-800);background:#fff;
+    border:0.5px solid var(--purple-200);
+    padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;
+    transition:background 0.12s;
+  }
+  .btn-copy:hover{background:var(--purple-50)}
+
+  /* SOCIAL PROOF */
+  .social-proof{
+    display:flex;align-items:center;justify-content:center;gap:24px;
+    margin-top:52px;padding-top:40px;
+    border-top:0.5px solid rgba(0,0,0,0.07);
+  }
+  .proof-item{text-align:center}
+  .proof-value{font-size:24px;font-weight:300;letter-spacing:-1px;color:var(--gray-900)}
+  .proof-label{font-size:12px;color:var(--gray-400);font-weight:300;margin-top:2px}
+  .proof-sep{width:0.5px;height:36px;background:rgba(0,0,0,0.08)}
+
+  /* FEATURES */
+  .section{padding:80px 40px;max-width:1100px;margin:0 auto}
+  .section-header{text-align:center;margin-bottom:52px}
+  .section-label{font-size:12px;font-weight:500;color:var(--purple-600);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+  .section-title{font-size:clamp(24px,3vw,36px);font-weight:300;letter-spacing:-1.2px;color:var(--gray-900);line-height:1.2}
+  .section-sub{font-size:15px;font-weight:300;color:var(--gray-400);margin-top:10px}
+
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .feature-card{
+    background:#fff;border:0.5px solid rgba(0,0,0,0.07);
+    border-radius:var(--radius-lg);padding:24px;
+    transition:box-shadow 0.2s;
+  }
+  .feature-card:hover{box-shadow:0 8px 32px rgba(0,0,0,0.06)}
+  .feature-icon{
+    width:40px;height:40px;border-radius:var(--radius-md);
+    background:var(--purple-50);border:0.5px solid var(--purple-100);
+    display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+  }
+  .feature-icon svg{width:18px;height:18px;stroke:var(--purple-600);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .feature-title{font-size:14px;font-weight:500;color:var(--gray-900);margin-bottom:8px;letter-spacing:-0.2px}
+  .feature-desc{font-size:13px;font-weight:300;color:var(--gray-400);line-height:1.6}
+
+  /* ANALYTICS PREVIEW */
+  .analytics-preview{
+    background:var(--gray-900);border-radius:var(--radius-xl);
+    padding:40px;display:grid;grid-template-columns:1fr 1fr;gap:32px;
+    align-items:center;margin:0 40px 80px;max-width:1020px;margin-left:auto;margin-right:auto;
+  }
+  .preview-text .section-label{color:var(--purple-400)}
+  .preview-text .section-title{color:#fff}
+  .preview-text .section-sub{color:rgba(255,255,255,0.4)}
+  .preview-text{text-align:left}
+  .preview-features{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+  .preview-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;font-weight:300;color:rgba(255,255,255,0.6);line-height:1.5}
+  .preview-feat::before{content:'→';color:var(--purple-400);flex-shrink:0;font-weight:500}
+  .preview-visual{
+    background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);
+    border-radius:var(--radius-lg);padding:20px;
+  }
+  .mini-metric{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px}
+  .mini-value{font-size:32px;font-weight:300;letter-spacing:-1.5px;color:#fff}
+  .mini-delta{font-size:12px;color:#5DCEA8;background:rgba(93,206,168,0.15);padding:3px 10px;border-radius:99px}
+  .mini-bars{display:flex;align-items:flex-end;gap:4px;height:60px}
+  .mini-bar{flex:1;border-radius:3px 3px 0 0;background:var(--purple-400);opacity:0.7;transition:opacity 0.2s}
+  .mini-bar:hover{opacity:1}
+  .mini-bar.peak{background:var(--purple-400);opacity:1}
+  .mini-geo{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .mini-geo-item{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.5)}
+  .mini-geo-bar-wrap{flex:1;height:3px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden}
+  .mini-geo-bar{height:100%;background:var(--purple-400);border-radius:99px}
+
+  /* PRICING */
+  .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .pricing-card{
+    background:#fff;border:0.5px solid rgba(0,0,0,0.07);
+    border-radius:var(--radius-lg);padding:28px;
+  }
+  .pricing-card.featured{
+    background:var(--gray-900);border-color:transparent;
+    position:relative;
+  }
+  .featured-badge{
+    position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+    background:var(--purple-600);color:#fff;
+    font-size:11px;font-weight:500;padding:4px 14px;border-radius:99px;
+    white-space:nowrap;
+  }
+  .plan-name{font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px}
+  .pricing-card.featured .plan-name{color:rgba(255,255,255,0.4)}
+  .plan-price{font-size:36px;font-weight:300;letter-spacing:-1.5px;color:var(--gray-900);line-height:1;margin-bottom:4px}
+  .pricing-card.featured .plan-price{color:#fff}
+  .plan-period{font-size:13px;color:var(--gray-400);margin-bottom:20px;font-weight:300}
+  .pricing-card.featured .plan-period{color:rgba(255,255,255,0.35)}
+  .plan-divider{height:0.5px;background:rgba(0,0,0,0.07);margin-bottom:20px}
+  .pricing-card.featured .plan-divider{background:rgba(255,255,255,0.1)}
+  .plan-features{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+  .plan-feat{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:300;color:var(--gray-600)}
+  .pricing-card.featured .plan-feat{color:rgba(255,255,255,0.6)}
+  .plan-feat-dot{width:5px;height:5px;border-radius:50%;background:var(--green-600);flex-shrink:0}
+  .pricing-card.featured .plan-feat-dot{background:var(--purple-400)}
+  .plan-feat.muted{color:var(--gray-400)}
+  .pricing-card.featured .plan-feat.muted{color:rgba(255,255,255,0.2)}
+  .btn-plan{
+    width:100%;font-family:inherit;font-size:13px;font-weight:500;
+    padding:11px;border-radius:var(--radius-sm);cursor:pointer;
+    transition:all 0.15s;border:0.5px solid rgba(0,0,0,0.1);
+    color:var(--gray-900);background:#fff;
+  }
+  .btn-plan:hover{background:var(--gray-50)}
+  .btn-plan.featured{background:var(--purple-600);color:#fff;border-color:transparent}
+  .btn-plan.featured:hover{background:var(--purple-800)}
+
+  /* FAQ */
+  .faq-list{display:flex;flex-direction:column;gap:0;max-width:680px;margin:0 auto}
+  .faq-item{border-bottom:0.5px solid rgba(0,0,0,0.08)}
+  .faq-q{
+    width:100%;font-family:inherit;font-size:14px;font-weight:400;
+    color:var(--gray-900);background:none;border:none;
+    padding:18px 0;text-align:left;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+  }
+  .faq-q:hover{color:var(--purple-600)}
+  .faq-icon{width:16px;height:16px;flex-shrink:0;stroke:var(--gray-400);stroke-width:1.5;fill:none;transition:transform 0.2s}
+  .faq-item.open .faq-icon{transform:rotate(45deg)}
+  .faq-a{font-size:13px;font-weight:300;color:var(--gray-400);line-height:1.65;padding-bottom:16px;display:none}
+  .faq-item.open .faq-a{display:block}
+
+  /* CTA */
+  .cta-section{
+    background:var(--gray-900);margin:0 40px 80px;
+    border-radius:var(--radius-xl);padding:60px 40px;
+    text-align:center;max-width:1020px;margin-left:auto;margin-right:auto;
+    position:relative;overflow:hidden;
+  }
+  .cta-section::before{
+    content:'';position:absolute;top:-120px;left:-120px;
+    width:500px;height:500px;
+    background:radial-gradient(circle,rgba(127,119,221,0.15) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .cta-section::after{
+    content:'';position:absolute;bottom:-80px;right:-80px;
+    width:350px;height:350px;
+    background:radial-gradient(circle,rgba(83,74,183,0.1) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .cta-section h2{font-size:clamp(24px,3vw,40px);font-weight:300;letter-spacing:-1.5px;color:#fff;margin-bottom:12px;position:relative;z-index:1}
+  .cta-section p{font-size:15px;font-weight:300;color:rgba(255,255,255,0.4);margin-bottom:32px;position:relative;z-index:1}
+  .cta-actions{display:flex;gap:10px;justify-content:center;position:relative;z-index:1;flex-wrap:wrap}
+  .btn-cta-primary{font-family:inherit;font-size:14px;font-weight:500;color:#fff;background:var(--purple-600);border:none;padding:12px 28px;border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;transition:background 0.15s}
+  .btn-cta-primary:hover{background:var(--purple-400)}
+  .btn-cta-ghost{font-family:inherit;font-size:14px;font-weight:400;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.12);padding:12px 28px;border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;transition:background 0.15s}
+  .btn-cta-ghost:hover{background:rgba(255,255,255,0.12)}
+
+  /* FOOTER */
+  footer{border-top:0.5px solid rgba(0,0,0,0.07);padding:40px;display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto}
+  .footer-logo{font-size:15px;font-weight:500;color:var(--gray-900);letter-spacing:-0.4px}
+  .footer-logo span{color:var(--purple-600)}
+  .footer-links{display:flex;gap:20px}
+  .footer-link{font-size:12px;color:var(--gray-400);text-decoration:none;font-weight:300;transition:color 0.12s}
+  .footer-link:hover{color:var(--gray-900)}
+  .footer-copy{font-size:12px;color:var(--gray-400);font-weight:300}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-900);color:#fff;font-size:13px;padding:10px 20px;border-radius:99px;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:200;white-space:nowrap;pointer-events:none}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  @media (max-width: 900px) {
+    nav{padding:0 20px}
+    .hero{padding:60px 20px 48px}
+    .section{padding:48px 20px}
+    .features-grid{grid-template-columns:1fr 1fr}
+    .analytics-preview{grid-template-columns:1fr;margin:0 20px 48px}
+    .preview-visual{display:none}
+    .pricing-grid{grid-template-columns:1fr}
+    .cta-section{margin:0 20px 48px;padding:40px 24px}
+    footer{flex-direction:column;gap:20px;text-align:center;padding:32px 20px}
+    .footer-links{flex-wrap:wrap;justify-content:center}
+    .social-proof{gap:16px}
+  }
+  @media (max-width: 600px) {
+    .nav-links{display:none}
+    .features-grid{grid-template-columns:1fr}
+    .shortener-box{flex-direction:column;padding:12px}
+    .btn-shorten{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="123bit-landing.html" class="nav-logo">123<span>bit</span>.app</a>
+  <div class="nav-links">
+    <a class="nav-link" href="#features">Funcionalidades</a>
+    <a class="nav-link" href="#pricing">Preços</a>
+    <a class="nav-link" href="#faq">FAQ</a>
+  </div>
+  <div class="nav-actions">
+    <a class="btn-ghost" href="123bit-login.html">Entrar</a>
+    <a class="btn-primary" href="123bit-login.html">Começar grátis</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Novo: QR Codes personalizados com logo
+  </div>
+  <h1>Links curtos,<br><em>analytics poderosos</em></h1>
+  <p>Encurte URLs, rastreie cliques em tempo real e gerencie todos os seus links com uma interface moderna e intuitiva.</p>
+
+  <div class="shortener-box">
+    <input class="shortener-input" type="url" placeholder="Cole sua URL longa aqui..." id="urlInput" />
+    <button class="btn-shorten" onclick="shortenUrl()">Encurtar agora</button>
+  </div>
+  <div class="result-box" id="resultBox">
+    <span class="result-short" id="resultShort">123bit.app/abc123</span>
+    <button class="btn-copy" onclick="copyResult()">Copiar</button>
+  </div>
+  <p class="hero-note">Sem cadastro necessário para uso básico. <a href="123bit-login.html">Crie uma conta</a> para analytics completos.</p>
+
+  <!-- SOCIAL PROOF -->
+  <div class="social-proof">
+    <div class="proof-item">
+      <div class="proof-value">10M+</div>
+      <div class="proof-label">Links criados</div>
+    </div>
+    <div class="proof-sep"></div>
+    <div class="proof-item">
+      <div class="proof-value">500k+</div>
+      <div class="proof-label">Usuários ativos</div>
+    </div>
+    <div class="proof-sep"></div>
+    <div class="proof-item">
+      <div class="proof-value">&lt;50ms</div>
+      <div class="proof-label">Tempo de redirect</div>
+    </div>
+    <div class="proof-sep"></div>
+    <div class="proof-item">
+      <div class="proof-value">99.9%</div>
+      <div class="proof-label">Uptime garantido</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-header">
+    <div class="section-label">Funcionalidades</div>
+    <div class="section-title">Tudo que você precisa para<br>gerenciar seus links</div>
+    <div class="section-sub">Do encurtamento básico até analytics empresariais.</div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div class="feature-title">Alias personalizados</div>
+      <div class="feature-desc">Defina exatamente como sua URL curta ficará. Ex: 123bit.app/meu-produto em vez de 123bit.app/xk2j9.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>
+      </div>
+      <div class="feature-title">Analytics em tempo real</div>
+      <div class="feature-desc">Acompanhe cliques, dispositivos, localização geográfica e origem do tráfego com gráficos interativos.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-5v5"/><path d="M16 16h.01"/></svg>
+      </div>
+      <div class="feature-title">QR Code automático</div>
+      <div class="feature-desc">Cada link gera automaticamente um QR Code em SVG/PNG, pronto para campanhas impressas e materiais físicos.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="feature-title">Links com senha</div>
+      <div class="feature-desc">Proteja o destino dos seus links com senha. Ideal para conteúdo exclusivo ou campanhas com acesso controlado.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+      </div>
+      <div class="feature-title">Domínio customizado</div>
+      <div class="feature-desc">Use seu próprio domínio como base para links curtos. SSL automático via Let's Encrypt incluído.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M8 9l3 3-3 3"/><path d="M13 15h3"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+      </div>
+      <div class="feature-title">API pública</div>
+      <div class="feature-desc">Integre o 123bit.app diretamente na sua stack via REST API. Documentação completa e SDKs disponíveis.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ANALYTICS PREVIEW -->
+<div class="analytics-preview">
+  <div class="preview-text">
+    <div class="section-label">Analytics</div>
+    <div class="section-title" style="font-size:28px">Dados que você<br>realmente usa</div>
+    <div class="section-sub" style="font-size:14px">Saiba de onde vêm seus cliques, em que dispositivo, qual país e muito mais — tudo em tempo real.</div>
+    <div class="preview-features">
+      <div class="preview-feat">Cliques por hora, dia, semana ou mês</div>
+      <div class="preview-feat">Geolocalização por país e cidade</div>
+      <div class="preview-feat">Breakdown de dispositivo, OS e navegador</div>
+      <div class="preview-feat">Rastreamento de referrer (origem do clique)</div>
+      <div class="preview-feat">Exportação em CSV ou JSON</div>
+    </div>
+  </div>
+  <div class="preview-visual">
+    <div class="mini-metric">
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.2px">CLIQUES (7 DIAS)</div>
+        <div class="mini-value">12.847</div>
+      </div>
+      <div class="mini-delta">+18%</div>
+    </div>
+    <div class="mini-bars">
+      <div class="mini-bar" style="height:35%"></div>
+      <div class="mini-bar" style="height:50%"></div>
+      <div class="mini-bar" style="height:42%"></div>
+      <div class="mini-bar" style="height:68%"></div>
+      <div class="mini-bar" style="height:55%"></div>
+      <div class="mini-bar" style="height:80%"></div>
+      <div class="mini-bar peak" style="height:100%"></div>
+    </div>
+    <div class="mini-geo">
+      <div class="mini-geo-item">
+        <span>🇧🇷</span>
+        <span style="flex:0 0 60px">Brasil</span>
+        <div class="mini-geo-bar-wrap"><div class="mini-geo-bar" style="width:72%"></div></div>
+        <span style="font-family:'DM Mono',monospace;min-width:32px;text-align:right">72%</span>
+      </div>
+      <div class="mini-geo-item">
+        <span>🇵🇹</span>
+        <span style="flex:0 0 60px">Portugal</span>
+        <div class="mini-geo-bar-wrap"><div class="mini-geo-bar" style="width:11%"></div></div>
+        <span style="font-family:'DM Mono',monospace;min-width:32px;text-align:right">11%</span>
+      </div>
+      <div class="mini-geo-item">
+        <span>🇺🇸</span>
+        <span style="flex:0 0 60px">EUA</span>
+        <div class="mini-geo-bar-wrap"><div class="mini-geo-bar" style="width:7%"></div></div>
+        <span style="font-family:'DM Mono',monospace;min-width:32px;text-align:right">7%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section class="section" id="pricing" style="padding-bottom:0">
+  <div class="section-header">
+    <div class="section-label">Preços</div>
+    <div class="section-title">Planos simples e transparentes</div>
+    <div class="section-sub">Comece grátis. Faça upgrade quando precisar.</div>
+  </div>
+  <div class="pricing-grid">
+    <!-- FREE -->
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">R$ 0</div>
+      <div class="plan-period">para sempre</div>
+      <div class="plan-divider"></div>
+      <div class="plan-features">
+        <div class="plan-feat"><span class="plan-feat-dot"></span>50 links ativos</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>1.000 cliques/mês</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Analytics básico (30 dias)</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>QR Code básico</div>
+        <div class="plan-feat muted"><span class="plan-feat-dot" style="background:var(--gray-200)"></span>Domínio customizado</div>
+        <div class="plan-feat muted"><span class="plan-feat-dot" style="background:var(--gray-200)"></span>API access</div>
+      </div>
+      <button class="btn-plan" onclick="window.location='123bit-login.html'">Começar grátis</button>
+    </div>
+    <!-- PRO -->
+    <div class="pricing-card featured">
+      <div class="featured-badge">Mais popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">R$ 29</div>
+      <div class="plan-period">/mês · cobrado mensalmente</div>
+      <div class="plan-divider"></div>
+      <div class="plan-features">
+        <div class="plan-feat"><span class="plan-feat-dot"></span>5.000 links ativos</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>100.000 cliques/mês</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Analytics completo (1 ano)</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>1 domínio customizado + SSL</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>QR Code customizável</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>API 1.000 req/hora</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Exportar dados (CSV)</div>
+      </div>
+      <button class="btn-plan featured" onclick="window.location='123bit-login.html'">Assinar Pro</button>
+    </div>
+    <!-- ENTERPRISE -->
+    <div class="pricing-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price">R$ 99</div>
+      <div class="plan-period">/mês · cobrado mensalmente</div>
+      <div class="plan-divider"></div>
+      <div class="plan-features">
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Links ilimitados</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Cliques ilimitados</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Analytics ilimitado</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>10 domínios customizados</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>QR Code com logo</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>API 10.000 req/hora</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>CSV + JSON + Webhooks</div>
+        <div class="plan-feat"><span class="plan-feat-dot"></span>Suporte prioritário + SLA</div>
+      </div>
+      <button class="btn-plan" onclick="window.location='123bit-login.html'">Falar com vendas</button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq" style="padding-top:80px">
+  <div class="section-header">
+    <div class="section-label">FAQ</div>
+    <div class="section-title">Perguntas frequentes</div>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Os links criados no plano Free expiram?
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="faq-a">Não. Links criados no plano Free não expiram automaticamente. Você pode manter até 50 links ativos simultaneamente. Links com expiração manual (definida por você) são suportados em todos os planos.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Posso usar meu próprio domínio?
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="faq-a">Sim, nos planos Pro e Enterprise. Basta apontar um CNAME do seu domínio para nosso servidor e o sistema provisiona o SSL automaticamente via Let's Encrypt. A verificação leva menos de 5 minutos.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Como funciona a contagem de cliques?
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="faq-a">Cada acesso único ao seu link curto conta como um clique. Rastreamos IP (anonimizado por LGPD), dispositivo, navegador, sistema operacional, país, cidade e referrer. Bot e crawler filtering está ativo por padrão.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        O redirect é rápido mesmo com analytics?
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="faq-a">Sim. O redirect acontece via cache Redis com latência menor que 50ms (p95). O analytics é processado de forma assíncrona via fila BullMQ, sem impacto algum na velocidade do redirect.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        O 123bit.app é compatível com LGPD?
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="faq-a">Sim. Anonimizamos IPs antes de armazenar, oferecemos política de retenção configurável e mantemos logs de auditoria para ações críticas. Nossa política de privacidade detalha todos os dados coletados e como são tratados.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Pronto para começar?</h2>
+  <p>Crie sua conta grátis em segundos. Sem cartão de crédito.</p>
+  <div class="cta-actions">
+    <a class="btn-cta-primary" href="123bit-login.html">Criar conta grátis</a>
+    <a class="btn-cta-ghost" href="#pricing">Ver planos</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">123<span>bit</span>.app</div>
+  <div class="footer-links">
+    <a class="footer-link" href="#">Termos de uso</a>
+    <a class="footer-link" href="#">Privacidade</a>
+    <a class="footer-link" href="#">Status</a>
+    <a class="footer-link" href="#">Docs API</a>
+    <a class="footer-link" href="#">Blog</a>
+  </div>
+  <div class="footer-copy">© 2026 123bit.app</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SHORT_CODES = ['abc123','xyz7k','meu-link','promo24','launch'];
+let codeIdx = 0;
+
+function shortenUrl() {
+  const input = document.getElementById('urlInput');
+  const val = input.value.trim();
+  if (!val) {
+    input.focus();
+    return;
+  }
+  const code = SHORT_CODES[codeIdx++ % SHORT_CODES.length];
+  document.getElementById('resultShort').textContent = '123bit.app/' + code;
+  document.getElementById('resultBox').classList.add('show');
+}
+
+function copyResult() {
+  const text = document.getElementById('resultShort').textContent;
+  navigator.clipboard.writeText('https://' + text).then(() => showToast('Link copiado!'));
+}
+
+document.getElementById('urlInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') shortenUrl();
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  item.classList.toggle('open');
+}
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+});
+</script>
+</body>
+</html>
