@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { authenticator } from 'otplib'
+import { generateSecret, generateURI, verify } from 'otplib'
 import { nanoid } from 'nanoid'
 
 // GET  — get 2FA status + setup data (secret + QR URI)
@@ -23,13 +23,13 @@ export async function GET() {
   }
 
   // Generate a fresh secret for setup
-  const secret = user.twoFactorSecret || authenticator.generateSecret()
+  const secret = user.twoFactorSecret || generateSecret()
 
   if (!user.twoFactorSecret) {
     await prisma.user.update({ where: { id: session.user.id }, data: { twoFactorSecret: secret } })
   }
 
-  const otpAuthUrl = authenticator.keyuri(user.email || session.user.id, '123bit', secret)
+  const otpAuthUrl = generateURI({ type: 'totp', label: user.email || session.user.id, secret, issuer: '123bit' })
 
   return NextResponse.json({ enabled: false, otpAuthUrl, secret })
 }
@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
   if (!user?.twoFactorSecret) return NextResponse.json({ error: 'Configuração não iniciada' }, { status: 400 })
   if (user.twoFactorEnabled) return NextResponse.json({ error: '2FA já habilitado' }, { status: 400 })
 
-  const isValid = authenticator.verify({ token, secret: user.twoFactorSecret })
-  if (!isValid) return NextResponse.json({ error: 'Código inválido ou expirado' }, { status: 400 })
+  const result = await verify({ token, secret: user.twoFactorSecret, type: 'totp' })
+  if (!result.valid) return NextResponse.json({ error: 'Código inválido ou expirado' }, { status: 400 })
 
   // Generate 8 backup codes
   const backupCodes = Array.from({ length: 8 }, () => nanoid(10).toUpperCase())
@@ -79,8 +79,10 @@ export async function DELETE(req: NextRequest) {
   })
   if (!user?.twoFactorEnabled) return NextResponse.json({ error: '2FA não habilitado' }, { status: 400 })
 
-  const isValid = user.twoFactorSecret && authenticator.verify({ token, secret: user.twoFactorSecret })
-  if (!isValid) return NextResponse.json({ error: 'Código inválido' }, { status: 400 })
+  const result = user.twoFactorSecret
+    ? await verify({ token, secret: user.twoFactorSecret, type: 'totp' })
+    : { valid: false }
+  if (!result.valid) return NextResponse.json({ error: 'Código inválido' }, { status: 400 })
 
   await prisma.$transaction([
     prisma.user.update({ where: { id: session.user.id }, data: { twoFactorEnabled: false, twoFactorSecret: null } }),

@@ -69,11 +69,11 @@
   --bg-hover: #252529;
   --bg-active: #2D2D32;
   --text-primary: #FAFAFA;
-  --text-secondary: #ede7e7;
-  --text-tertiary: #ede7e7;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #6B7280;
   --text-inverse: #0A0A0B;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-secondary: rgba(255, 255, 255, 0.12);
+  --border-primary: rgba(255, 255, 255, 0.10);
+  --border-secondary: rgba(255, 255, 255, 0.18);
   --border-focus: #7F77DD;
   --primary: #7F77DD;
   --primary-hover: #938EE8;
@@ -2908,13 +2908,25 @@ footer {
 .btn-ghost {
   color: var(--text-secondary);
   background: transparent;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border-secondary);
 }
 
 .btn-ghost:hover {
   color: var(--text-primary);
   background: var(--bg-hover);
-  border-color: var(--border-secondary);
+  border-color: var(--border-focus);
+}
+
+[data-theme="dark"] .btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .btn-danger {

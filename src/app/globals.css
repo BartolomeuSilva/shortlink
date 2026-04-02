@@ -66,11 +66,11 @@
   --bg-hover: #252529;
   --bg-active: #2D2D32;
   --text-primary: #FAFAFA;
-  --text-secondary: #ede7e7;
-  --text-tertiary: #ede7e7;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #6B7280;
   --text-inverse: #0A0A0B;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-secondary: rgba(255, 255, 255, 0.12);
+  --border-primary: rgba(255, 255, 255, 0.10);
+  --border-secondary: rgba(255, 255, 255, 0.18);
   --border-focus: #7F77DD;
   --primary: #7F77DD;
   --primary-hover: #938EE8;

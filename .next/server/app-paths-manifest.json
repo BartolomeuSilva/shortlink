@@ -1,7 +1,12 @@
 {
+  "/api/user/2fa/route": "app/api/user/2fa/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/links/[id]/analytics/route": "app/api/links/[id]/analytics/route.js",
-  "/api/links/[id]/rules/route": "app/api/links/[id]/rules/route.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
   "/(protected)/links/page": "app/(protected)/links/page.js",
-  "/(protected)/links/[id]/page": "app/(protected)/links/[id]/page.js"
+  "/(protected)/bio-pages/page": "app/(protected)/bio-pages/page.js",
+  "/(protected)/bio-pages/[id]/analytics/page": "app/(protected)/bio-pages/[id]/analytics/page.js",
+  "/(protected)/links/[id]/page": "app/(protected)/links/[id]/page.js",
+  "/(protected)/settings/page": "app/(protected)/settings/page.js",
+  "/(protected)/settings/security/page": "app/(protected)/settings/security/page.js",
+  "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js"
 }
