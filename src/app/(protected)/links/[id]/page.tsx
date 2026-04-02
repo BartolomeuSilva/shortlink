@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface AnalyticsData {
   summary: {
@@ -35,13 +36,53 @@ function formatHour(hour: number): string {
   return `${hour.toString().padStart(2, '0')}:00`
 }
 
-export default function LinkAnalyticsPage({ params }: AnalyticsPageProps) {
+export default function LinkAnalyticsPage({ params }: { params: { id: string } }) {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const resolvedParams = use(params)
+  const resolvedParams = params
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState(30)
+  const topbar = useTopbar()
+
+  const exportToCSV = () => {
+    if (!data) return
+    const headers = ['Data', 'Cliques']
+    const rows = data.chartData.map(d => [d.date, d.clicks])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `analytics-${resolvedParams.id}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  useEffect(() => {
+    topbar.setTitle('Analytics')
+    topbar.setSubtitle('Analytics detalhado do link')
+    topbar.setActions(
+      <>
+        <select
+          value={period}
+          onChange={(e) => setPeriod(parseInt(e.target.value))}
+          style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid var(--border-secondary)', borderRadius: '8px', background: 'var(--bg-secondary)' }}
+        >
+          <option value={7}>Últimos 7 dias</option>
+          <option value={30}>Últimos 30 dias</option>
+          <option value={90}>Últimos 90 dias</option>
+        </select>
+        <button
+          onClick={exportToCSV}
+          className="btn btn-ghost"
+          style={{ fontSize: '13px' }}
+        >
+          Exportar CSV
+        </button>
+      </>
+    )
+  }, [period, data])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -63,22 +104,6 @@ export default function LinkAnalyticsPage({ params }: AnalyticsPageProps) {
     } finally {
       setLoading(false)
     }
-  }
-
-  const exportToCSV = () => {
-    if (!data) return
-
-    const headers = ['Data', 'Cliques']
-    const rows = data.chartData.map(d => [d.date, d.clicks])
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `analytics-${resolvedParams.id}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   if (status === 'loading' || loading) {
@@ -105,38 +130,7 @@ export default function LinkAnalyticsPage({ params }: AnalyticsPageProps) {
   const maxDeviceClicks = Math.max(...data.clicksByDevice.map(d => d.clicks), 1)
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Link
-        href="/links"
-        style={{ fontSize: '13px', color: 'var(--primary)', textDecoration: 'none', marginBottom: '16px', display: 'inline-block' }}
-      >
-        ← Voltar para Meus Links
-      </Link>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)' }}>Analytics</h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Analytics detalhado do link</p>
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(parseInt(e.target.value))}
-            style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid var(--border-secondary)', borderRadius: '8px', background: 'var(--bg-secondary)' }}
-          >
-            <option value={7}>Últimos 7 dias</option>
-            <option value={30}>Últimos 30 dias</option>
-            <option value={90}>Últimos 90 dias</option>
-          </select>
-          <button
-            onClick={exportToCSV}
-            style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 500, color: 'var(--primary)', background: 'var(--bg-secondary)', border: '1px solid var(--primary)', borderRadius: '8px', cursor: 'pointer' }}
-          >
-            Exportar CSV
-          </button>
-        </div>
-      </div>
-
+    <div className="page-content">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.08)' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Total de cliques</div>

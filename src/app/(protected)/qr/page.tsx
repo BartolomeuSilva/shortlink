@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface LinkItem {
   id: string
@@ -16,6 +17,13 @@ export default function QRCodePage() {
   const router = useRouter()
   const [links, setLinks] = useState<LinkItem[]>([])
   const [loading, setLoading] = useState(true)
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('QR Codes')
+    topbar.setSubtitle('Baixe QR Codes dos seus links')
+    topbar.setActions(null)
+  }, [])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -59,11 +67,7 @@ export default function QRCodePage() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>QR Codes</h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>Baixe QR Codes dos seus links</p>
-      </div>
+    <div className="page-content">
 
       {links.length === 0 ? (
         <div style={{ background: 'var(--bg-secondary)', padding: '40px', borderRadius: '12px', textAlign: 'center' }}>

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -24,12 +25,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-title">Configurações</div>
-          <div className="page-subtitle">Gerencie sua conta e preferências</div>
-        </div>
-      </div>
+      <PageHeader title="Configurações" subtitle="Gerencie sua conta e preferências" />
 
       <div className="page-content" style={{ maxWidth: '640px' }}>
         {/* Profile card */}

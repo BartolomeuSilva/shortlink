@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { ClicksChart } from '@/components/analytics/ClicksChart'
 import { CreateLinkModal } from '@/components/links/CreateLinkModal'
 import { formatNumber, getBaseUrl } from '@/lib/utils'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface DashboardClientProps {
   metrics: {
@@ -43,42 +44,43 @@ export function DashboardClient({
   const [showModal, setShowModal] = useState(false)
   const [period, setPeriod] = useState<'7d' | '30d'>('30d')
   const baseUrl = getBaseUrl()
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('Dashboard')
+    topbar.setSubtitle(undefined)
+    topbar.setActions(
+      <>
+        <div className="period-selector">
+          {(['7d', '30d'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`period-btn ${period === p ? 'active' : ''}`}
+            >
+              {p === '7d' ? '7 dias' : '30 dias'}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn btn-primary"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Novo link
+        </button>
+      </>
+    )
+  }, [period])
 
   const displayData = period === '7d' ? chartData.slice(-7) : chartData
   const maxGeoClicks = geoData[0]?.clicks || 1
 
   return (
     <>
-      {/* TOPBAR */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-title">Dashboard</div>
-        </div>
-        <div className="page-header-right">
-          <div className="period-selector">
-            {(['7d', '30d'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`period-btn ${period === p ? 'active' : ''}`}
-              >
-                {p === '7d' ? '7 dias' : '30 dias'}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="btn btn-primary"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Novo link
-          </button>
-        </div>
-      </div>
-
       {/* CONTENT */}
       <div className="page-content">
         {/* Welcome */}

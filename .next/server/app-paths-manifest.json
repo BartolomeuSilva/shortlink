@@ -1,11 +1,7 @@
 {
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/links/route": "app/api/links/route.js",
-  "/(protected)/links/compare/page": "app/(protected)/links/compare/page.js",
-  "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js",
-  "/(protected)/settings/domains/page": "app/(protected)/settings/domains/page.js",
-  "/(protected)/settings/api-keys/page": "app/(protected)/settings/api-keys/page.js",
+  "/u/[username]/page": "app/u/[username]/page.js",
+  "/(protected)/bio/page": "app/(protected)/bio/page.js",
+  "/(protected)/workspaces/page": "app/(protected)/workspaces/page.js",
   "/(protected)/links/page": "app/(protected)/links/page.js",
-  "/(protected)/qr/page": "app/(protected)/qr/page.js"
+  "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js"
 }

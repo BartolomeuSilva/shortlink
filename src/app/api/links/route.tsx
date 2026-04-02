@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { redisSet, redisDel } from '@/lib/redis'
+import { redisSet } from '@/lib/redis'
 import { generateShortCode, isValidUrl, getBaseUrl } from '@/lib/utils'
-import { nanoid } from 'nanoid'
 import { z } from 'zod'
 
 const createLinkSchema = z.object({
@@ -13,7 +12,18 @@ const createLinkSchema = z.object({
   description: z.string().optional(),
   password: z.string().optional(),
   expiresAt: z.string().datetime({ local: true }).optional(),
+  startsAt: z.string().datetime({ local: true }).optional(),
+  maxClicks: z.number().int().positive().optional(),
   tags: z.array(z.string()).optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
+  utmTerm: z.string().optional(),
+  utmContent: z.string().optional(),
+  ogTitle: z.string().optional(),
+  ogDescription: z.string().optional(),
+  ogImage: z.string().optional(),
+  campaignId: z.string().optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -94,7 +104,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { url, customCode, title, description, password, expiresAt, tags } = result.data
+    const {
+      url, customCode, title, description, password,
+      expiresAt, startsAt, maxClicks,
+      utmSource, utmMedium, utmCampaign, utmTerm, utmContent,
+      ogTitle, ogDescription, ogImage, campaignId,
+    } = result.data
 
     if (!isValidUrl(url)) {
       return NextResponse.json(
@@ -163,11 +178,20 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         passwordRequired: !!password,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
+        startsAt: startsAt ? new Date(startsAt) : null,
+        maxClicks: maxClicks || null,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
+        utmTerm: utmTerm || null,
+        utmContent: utmContent || null,
+        ogTitle: ogTitle || null,
+        ogDescription: ogDescription || null,
+        ogImage: ogImage || null,
+        campaignId: campaignId || null,
         isActive: true,
       },
-      include: {
-        tags: true,
-      },
+      include: { tags: true },
     })
 
     await redisSet(`link:${shortCode}`, JSON.stringify({

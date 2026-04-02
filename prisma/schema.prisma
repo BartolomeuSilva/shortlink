@@ -20,25 +20,42 @@ enum DeviceType {
   UNKNOWN
 }
 
-model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  emailVerified     DateTime?
-  name              String?
-  image             String?
-  password          String?
-  plan              Plan      @default(FREE)
-  apiKey            String?   @unique
-  twoFactorEnabled  Boolean   @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
 
-  accounts  Account[]
-  sessions  Session[]
-  links     Link[]
-  tags      Tag[]
-  domains   Domain[]
-  apiKeys   ApiKey[]
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  emailVerified       DateTime?
+  name                String?
+  image               String?
+  password            String?
+  plan                Plan      @default(FREE)
+  apiKey              String?   @unique
+  twoFactorEnabled    Boolean   @default(false)
+  twoFactorSecret     String?
+  metaPixelId         String?
+  googleTagId         String?
+  tiktokPixelId       String?
+  linkedinTagId       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  links             Link[]
+  tags              Tag[]
+  domains           Domain[]
+  apiKeys           ApiKey[]
+  campaigns         Campaign[]
+  webhooks          Webhook[]
+  backupCodes       BackupCode[]
+  bioPage           BioPage?
+  workspaceMemberships WorkspaceMember[]
 }
 
 model Account {
@@ -77,6 +94,18 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model Campaign {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links Link[]
+}
+
 model Link {
   id               String    @id @default(cuid())
   shortCode        String    @unique
@@ -88,14 +117,60 @@ model Link {
   password         String?
   passwordRequired Boolean   @default(false)
   expiresAt        DateTime?
+  startsAt         DateTime?
+  maxClicks        Int?
   isActive         Boolean   @default(true)
   clickCount       Int       @default(0)
+  // UTM parameters
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  utmTerm          String?
+  utmContent       String?
+  // OG Preview
+  ogTitle          String?
+  ogDescription    String?
+  ogImage          String?
+  // Health monitoring
+  healthStatus     String?
+  lastHealthCheck  DateTime?
+  // Campaign
+  campaignId       String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  tags   Tag[]   @relation("LinkTags")
-  clicks Click[]
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign      Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  tags          Tag[]          @relation("LinkTags")
+  clicks        Click[]
+  redirectRules RedirectRule[]
+  qrConfig      QRConfig?
+}
+
+model RedirectRule {
+  id          String @id @default(cuid())
+  linkId      String
+  type        String  // "geo" | "device" | "time" | "ab"
+  condition   String  @db.Text // JSON string
+  destination String  @db.Text
+  weight      Int     @default(100)
+  order       Int     @default(0)
+  active      Boolean @default(true)
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+}
+
+model QRConfig {
+  id          String  @id @default(cuid())
+  linkId      String  @unique
+  logoUrl     String?
+  fgColor     String  @default("#000000")
+  bgColor     String  @default("#FFFFFF")
+  cornerStyle String  @default("square")
+  errorLevel  String  @default("M")
+  frameText   String?
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
 }
 
 model Click {
@@ -140,7 +215,19 @@ model Domain {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deepLinkConfig DeepLinkConfig?
+}
+
+model DeepLinkConfig {
+  id              String  @id @default(cuid())
+  domainId        String  @unique
+  iosAppId        String?
+  androidPackage  String?
+  iosStoreUrl     String?
+  androidStoreUrl String?
+
+  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model ApiKey {
@@ -154,4 +241,94 @@ model ApiKey {
   createdAt  DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BackupCode {
+  id        String    @id @default(cuid())
+  userId    String
+  code      String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String   @db.Text
+  secret    String?
+  events    String[]
+  active    Boolean  @default(true)
+  name      String
+  createdAt DateTime @default(now())
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String
+  event        String
+  payload      String   @db.Text
+  statusCode   Int?
+  responseBody String?  @db.Text
+  success      Boolean  @default(false)
+  deliveredAt  DateTime @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+}
+
+model BioPage {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  username    String   @unique
+  title       String?
+  bio         String?
+  theme       String   @default("dark")
+  accentColor String   @default("#8B5CF6")
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items BioPageItem[]
+}
+
+model BioPageItem {
+  id        String  @id @default(cuid())
+  bioPageId String
+  label     String
+  url       String  @db.Text
+  icon      String?
+  order     Int     @default(0)
+  active    Boolean @default(true)
+  clicks    Int     @default(0)
+
+  bioPage BioPage @relation(fields: [bioPageId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(VIEWER)
+  joinedAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
 }

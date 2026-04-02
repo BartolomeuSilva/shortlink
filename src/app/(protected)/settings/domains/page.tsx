@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface Domain {
   id: string
@@ -20,6 +21,13 @@ export default function DomainsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('Domínios')
+    topbar.setSubtitle('Conecte domínios personalizados aos seus links')
+    topbar.setActions(null)
+  }, [])
 
   useEffect(() => {
     fetch('/api/domains')
@@ -69,13 +77,6 @@ export default function DomainsPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-title">Domínios</div>
-          <div className="page-subtitle">Conecte domínios personalizados aos seus links</div>
-        </div>
-      </div>
-
       <div className="page-content" style={{ maxWidth: '680px' }}>
 
         {/* Add domain card */}

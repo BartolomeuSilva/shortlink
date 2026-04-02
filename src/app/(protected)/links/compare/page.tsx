@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface LinkItem {
   id: string
@@ -30,6 +31,13 @@ export default function ComparePage() {
   const [links, setLinks] = useState<LinkItem[]>([])
   const [comparisonData, setComparisonData] = useState<{ summary: ComparisonSummary[] } | null>(null)
   const [loading, setLoading] = useState(true)
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('Comparar Links')
+    topbar.setSubtitle('Compare o desempenho de múltiplos links')
+    topbar.setActions(null)
+  }, [])
 
   const linkIds = (searchParams.get('ids') || '').split(',').filter(Boolean)
 
@@ -91,29 +99,14 @@ export default function ComparePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <>
-        <div className="page-header">
-          <div className="page-header-left">
-            <div className="page-title">Comparar Links</div>
-            <div className="page-subtitle">Compare o desempenho de múltiplos links</div>
-          </div>
-        </div>
-        <div className="page-content">
-          <p style={{ color: 'var(--text-tertiary)' }}>Carregando...</p>
-        </div>
-      </>
+      <div className="page-content">
+        <p style={{ color: 'var(--text-tertiary)' }}>Carregando...</p>
+      </div>
     )
   }
 
   return (
     <>
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-title">Comparar Links</div>
-          <div className="page-subtitle">Compare o desempenho de múltiplos links</div>
-        </div>
-      </div>
-
       <div className="page-content">
         {/* Link Selector */}
         <div className="card" style={{ marginBottom: '24px' }}>

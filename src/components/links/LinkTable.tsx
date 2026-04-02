@@ -247,11 +247,10 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
                 <button onClick={() => downloadQR(link.id, link.shortCode)} className="link-mc-btn" title="Baixar QR Code">
                   <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><path d="M14 14h3v3h-3zM17 17h3v3h-3z" /></svg>
                 </button>
-                <label className="link-mc-btn" title={link.isActive ? 'Desativar' : 'Ativar'} style={{ cursor: 'pointer' }}>
+                <label title={link.isActive ? 'Desativar' : 'Ativar'} style={{ width: '30px', height: '17px', cursor: 'pointer', display: 'inline-flex', position: 'relative', alignItems: 'center', margin: '5px 9px 5px 4px' }}>
                   <input type="checkbox" checked={link.isActive} onChange={() => toggleActive(link.id, link.isActive)} style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
-                  <span style={{ display: 'inline-block', width: '30px', height: '17px', position: 'relative', background: link.isActive ? 'var(--primary)' : 'var(--border-secondary)', borderRadius: '99px', transition: 'background 0.2s' }}>
-                    <span style={{ position: 'absolute', width: '13px', height: '13px', left: link.isActive ? '15px' : '2px', top: '2px', background: 'white', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                  </span>
+                  <span style={{ position: 'absolute', inset: 0, background: link.isActive ? 'var(--primary)' : 'var(--border-secondary)', borderRadius: '99px', transition: 'background 0.2s' }} />
+                  <span style={{ position: 'absolute', width: '13px', height: '13px', left: '2px', top: '2px', background: 'var(--bg-secondary)', borderRadius: '50%', transition: 'transform 0.2s', transform: link.isActive ? 'translateX(13px)' : 'translateX(0)', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                 </label>
                 <button onClick={() => deleteLink(link.id)} disabled={deletingId === link.id} className="link-mc-btn" style={{ color: 'var(--color-error)' }} title="Excluir">
                   <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" /></svg>
@@ -267,8 +266,10 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ padding: '11px 16px', borderBottom: '0.5px solid rgba(0,0,0,0.07)', background: 'var(--bg-tertiary)' }}>
-                <input type="checkbox" checked={selected.size === links.length && links.length > 0} onChange={toggleAll} style={{ width: '14px', height: '14px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+              <th style={{ padding: '11px 16px', borderBottom: '0.5px solid rgba(0,0,0,0.07)', background: 'var(--bg-tertiary)', verticalAlign: 'middle' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <input type="checkbox" checked={selected.size === links.length && links.length > 0} onChange={toggleAll} style={{ width: '14px', height: '14px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                </div>
               </th>
               {['Link', 'Status', 'Cliques', 'Tags', 'Criado em', ''].map((h, i) => (
                 <th key={i} style={{
@@ -302,8 +303,10 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
 
                 return (
                   <tr key={link.id} style={{ borderBottom: '0.5px solid rgba(0,0,0,0.05)', cursor: 'default' }}>
-                    <td style={{ padding: '13px 16px' }}>
-                      <input type="checkbox" checked={selected.has(link.id)} onChange={() => toggleSelect(link.id)} style={{ width: '14px', height: '14px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                    <td style={{ padding: '11px 16px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <input type="checkbox" checked={selected.has(link.id)} onChange={() => toggleSelect(link.id)} style={{ width: '14px', height: '14px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                      </div>
                     </td>
                     <td style={{ padding: '13px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -387,12 +390,11 @@ export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTa
                             <path d="M14 14h3v3h-3zM17 17h3v3h-3z" />
                           </svg>
                         </button>
-                        <label className="toggle-switch" title={link.isActive ? 'Desativar' : 'Ativar'} style={{ width: '30px', height: '17px', cursor: 'pointer', display: 'inline-flex', position: 'relative', alignItems: 'center', margin: '5px 9px 5px 4px' }}>
-                          <input type="checkbox" checked={link.isActive} onChange={() => toggleActive(link.id, link.isActive)} style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
-                          <span style={{ position: 'absolute', inset: 0, background: link.isActive ? 'var(--primary)' : 'var(--border-secondary)', borderRadius: '99px', transition: 'background 0.2s' }}>
-                            <span style={{ position: 'absolute', width: '13px', height: '13px', left: link.isActive ? '15px' : '2px', top: '2px', background: 'var(--bg-secondary)', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                          </span>
-                        </label>
+                <label title={link.isActive ? 'Desativar' : 'Ativar'} style={{ width: '30px', height: '17px', cursor: 'pointer', display: 'inline-flex', position: 'relative', alignItems: 'center', margin: '5px 9px 5px 4px' }}>
+                  <input type="checkbox" checked={link.isActive} onChange={() => toggleActive(link.id, link.isActive)} style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
+                  <span style={{ position: 'absolute', inset: 0, background: link.isActive ? 'var(--primary)' : 'var(--border-secondary)', borderRadius: '99px', transition: 'background 0.2s' }} />
+                  <span style={{ position: 'absolute', width: '13px', height: '13px', left: '2px', top: '2px', background: 'var(--bg-secondary)', borderRadius: '50%', transition: 'transform 0.2s', transform: link.isActive ? 'translateX(13px)' : 'translateX(0)', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                </label>
                         <button
                           onClick={() => deleteLink(link.id)}
                           disabled={deletingId === link.id}

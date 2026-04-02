@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { redisGet } from '@/lib/redis'
 import { getBaseUrl } from '@/lib/utils'
 import QRCode from 'qrcode'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { identifier: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { identifier } = params
+  const { id } = params
   const { searchParams } = new URL(request.url)
 
   const format = searchParams.get('format') || 'svg'
   const size = Math.min(parseInt(searchParams.get('size') || '300'), 1000)
 
   const link = await prisma.link.findFirst({
-    where: {
-      OR: [{ id: identifier }, { shortCode: identifier }],
+    where: { OR: [{ id }, { shortCode: id }] },
+    select: {
+      shortCode: true,
+      customDomain: true,
+      qrConfig: true,
     },
-    select: { shortCode: true, customDomain: true },
   })
 
   if (!link) {
@@ -29,16 +30,21 @@ export async function GET(
     ? `https://${link.customDomain}/${link.shortCode}`
     : `${getBaseUrl()}/${link.shortCode}`
 
+  const fg = link.qrConfig?.fgColor || '#000000'
+  const bg = link.qrConfig?.bgColor || '#FFFFFF'
+  const errLevel = (link.qrConfig?.errorLevel || 'M') as 'L' | 'M' | 'Q' | 'H'
+
   try {
     if (format === 'svg') {
       const svg = await QRCode.toString(shortUrl, {
         type: 'svg',
         width: size,
         margin: 2,
-        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: errLevel,
+        color: { dark: fg, light: bg },
       })
       return new NextResponse(svg, {
-        headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' },
+        headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=3600' },
       })
     }
 
@@ -46,11 +52,12 @@ export async function GET(
       type: 'png',
       width: size,
       margin: 2,
-      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: errLevel,
+      color: { dark: fg, light: bg },
     })
 
     return new NextResponse(new Uint8Array(buffer), {
-      headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
+      headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
     })
   } catch (error) {
     console.error('QR Code error:', error)

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { Sidebar } from './Sidebar'
+import { Topbar, TopbarProvider } from './Topbar'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import Link from 'next/link'
 
@@ -17,7 +18,6 @@ interface LayoutShellProps {
 export function LayoutShell({ user, children }: LayoutShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  // Local state so avatar/name update immediately without re-login
   const [displayUser, setDisplayUser] = useState(user)
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
@@ -57,14 +57,12 @@ export function LayoutShell({ user, children }: LayoutShellProps) {
         <ThemeToggle />
       </header>
 
-      {/* Desktop theme toggle */}
-      <div className="desktop-theme-toggle">
-        <ThemeToggle />
-      </div>
-
-      <main className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`}>
-        {children}
-      </main>
+      <TopbarProvider>
+        <Topbar />
+        <main className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`}>
+          {children}
+        </main>
+      </TopbarProvider>
     </div>
   )
 }

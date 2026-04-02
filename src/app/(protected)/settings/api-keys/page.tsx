@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface ApiKey {
   id: string
@@ -37,6 +38,13 @@ export default function ApiKeysPage() {
   const [copiedKey, setCopiedKey] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null)
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('API Keys')
+    topbar.setSubtitle('Gerencie chaves de acesso à API do 123bit')
+    topbar.setActions(null)
+  }, [])
 
   useEffect(() => {
     fetch('/api/keys')
@@ -89,13 +97,6 @@ export default function ApiKeysPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div className="page-header-left">
-          <div className="page-title">API Keys</div>
-          <div className="page-subtitle">Gerencie chaves de acesso à API do 123bit</div>
-        </div>
-      </div>
-
       <div className="page-content" style={{ maxWidth: '680px' }}>
 
         {/* New key revealed */}

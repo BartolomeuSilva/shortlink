@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { LinkTable } from '@/components/links/LinkTable'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 async function getLinks(userId: string, page: number, search: string) {
   const limit = 20
@@ -65,12 +66,11 @@ export default async function LinksPage({
   const data = await getLinks(session.user.id, page, search)
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>Meus Links</h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>Gerencie seus links curtos</p>
+    <>
+      <PageHeader title="Meus Links" subtitle="Gerencie seus links curtos" />
+      <div className="page-content">
+        <LinkTable {...data} />
       </div>
-      <LinkTable {...data} />
-    </div>
+    </>
   )
 }
