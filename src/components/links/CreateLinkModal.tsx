@@ -1,20 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface CreateLinkModalProps {
   onClose: () => void
   onSuccess?: () => void
+  defaultCampaignId?: string
 }
 
 type Tab = 'basic' | 'utm' | 'og' | 'schedule' | 'rules'
 
-export function CreateLinkModal({ onClose, onSuccess }: CreateLinkModalProps) {
+interface Campaign { id: string; name: string }
+
+export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: CreateLinkModalProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<Tab>('basic')
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaignId, setCampaignId] = useState(defaultCampaignId || '')
+
+  useEffect(() => {
+    fetch('/api/campaigns')
+      .then(r => r.json())
+      .then(d => setCampaigns(d.campaigns || []))
+      .catch(() => {})
+  }, [])
 
   // Basic
   const [originalUrl, setOriginalUrl] = useState('')
@@ -72,6 +84,7 @@ export function CreateLinkModal({ onClose, onSuccess }: CreateLinkModalProps) {
       if (ogTitle) body.ogTitle = ogTitle
       if (ogDescription) body.ogDescription = ogDescription
       if (ogImage) body.ogImage = ogImage
+      if (campaignId) body.campaignId = campaignId
 
       const res = await fetch('/api/links', {
         method: 'POST',
@@ -192,9 +205,24 @@ export function CreateLinkModal({ onClose, onSuccess }: CreateLinkModalProps) {
                   <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Nome do link" style={inp} />
                 </div>
               </div>
-              <div>
-                <label style={lbl}>Senha (opcional)</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Proteger com senha" style={inp} />
+              <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={lbl}>Senha (opcional)</label>
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Proteger com senha" style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Campanha</label>
+                  <select
+                    value={campaignId}
+                    onChange={e => setCampaignId(e.target.value)}
+                    style={{ ...inp, cursor: 'pointer' }}
+                  >
+                    <option value="">Nenhuma</option>
+                    {campaigns.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           )}

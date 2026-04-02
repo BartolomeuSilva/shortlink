@@ -1,7 +1,13 @@
 {
-  "/u/[username]/page": "app/u/[username]/page.js",
-  "/(protected)/bio/page": "app/(protected)/bio/page.js",
-  "/(protected)/workspaces/page": "app/(protected)/workspaces/page.js",
+  "/api/bio-pages/route": "app/api/bio-pages/route.js",
+  "/api/bio-pages/[id]/analytics/route": "app/api/bio-pages/[id]/analytics/route.js",
+  "/b/[slug]/page": "app/b/[slug]/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/bio/click/route": "app/api/bio/click/route.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/[shortCode]/route": "app/[shortCode]/route.js",
+  "/(protected)/bio-pages/page": "app/(protected)/bio-pages/page.js",
+  "/(protected)/bio-pages/[id]/analytics/page": "app/(protected)/bio-pages/[id]/analytics/page.js",
   "/(protected)/links/page": "app/(protected)/links/page.js",
   "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js"
 }

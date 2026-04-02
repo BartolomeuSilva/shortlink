@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useTopbar } from '@/components/layout/Topbar'
 
 interface BioItem {
@@ -15,12 +17,13 @@ interface BioItem {
 
 interface BioPage {
   id: string
-  username: string
+  slug: string
   title: string | null
   bio: string | null
   theme: string
   accentColor: string
   published: boolean
+  clicksTotal: number
   items: BioItem[]
 }
 
@@ -31,21 +34,23 @@ const THEMES = [
 ]
 
 export default function BioEditorPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const slug = searchParams.get('slug')
+
   const [bio, setBio] = useState<BioPage | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
-  // Form state — initialized with defaults, not overwritten by bio load
-  const [username, setUsername] = useState('')
+  const [slugField, setSlugField] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [bioText, setBioText] = useState('')
   const [theme, setTheme] = useState('dark')
   const [accentColor, setAccentColor] = useState('#8B5CF6')
   const [published, setPublished] = useState(true)
 
-  // New item form
   const [newLabel, setNewLabel] = useState('')
   const [newUrl, setNewUrl] = useState('')
   const [newIcon, setNewIcon] = useState('')
@@ -54,37 +59,44 @@ export default function BioEditorPage() {
 
   const EMOJI_OPTIONS = ['', '🔗', '🌐', '📱', '📸', '🎵', '🎬', '📝', '💼', '🛒', '🎮', '📧', '📍', '❤️', '⭐', '🚀', '💡', '🎯', '🔥', '📌']
 
-  useEffect(() => {
-    fetch('/api/bio')
-      .then(r => r.json())
-      .then(d => {
-        if (d.bio) {
-          setBio(d.bio)
-          setUsername(d.bio.username || '')
-          setDisplayName(d.bio.title || '')
-          setBioText(d.bio.bio || '')
-          setTheme(d.bio.theme || 'dark')
-          setAccentColor(d.bio.accentColor || '#8B5CF6')
-          setPublished(d.bio.published ?? true)
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const loadBio = useCallback(async () => {
+    const url = slug ? `/api/bio?slug=${slug}` : '/api/bio'
+    try {
+      const res = await fetch(url)
+      const d = await res.json()
+      if (d.bio) {
+        setBio(d.bio)
+        setSlugField(d.bio.slug || '')
+        setDisplayName(d.bio.title || '')
+        setBioText(d.bio.bio || '')
+        setTheme(d.bio.theme || 'dark')
+        setAccentColor(d.bio.accentColor || '#8B5CF6')
+        setPublished(d.bio.published ?? true)
+      } else if (slug) {
+        setError('Bio não encontrada')
+      }
+    } catch {
+      setError('Erro ao carregar')
+    } finally {
+      setLoading(false)
+    }
+  }, [slug])
+
+  useEffect(() => { loadBio() }, [loadBio])
 
   const handleSavePage = async () => {
-    if (!username.trim()) {
-      setError('Username é obrigatório')
+    if (!slugField.trim()) {
+      setError('Slug é obrigatório')
       return
     }
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/bio', {
+      const res = await fetch(slug ? `/api/bio?slug=${slug}` : '/api/bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: username.trim().toLowerCase(),
+          slug: slugField.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
           title: displayName.trim() || null,
           bio: bioText.trim() || null,
           theme,
@@ -95,7 +107,7 @@ export default function BioEditorPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Erro ao salvar'); return }
       setBio(data.bio)
-      setUsername(data.bio.username)
+      setSlugField(data.bio.slug)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch {
@@ -110,7 +122,8 @@ export default function BioEditorPage() {
     setAddingItem(true)
     setError('')
     try {
-      const res = await fetch('/api/bio', {
+      const url = slug ? `/api/bio?slug=${slug}` : '/api/bio'
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -126,9 +139,7 @@ export default function BioEditorPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Erro ao adicionar link'); return }
       setBio(prev => prev ? { ...prev, items: [...prev.items, data.item] } : prev)
-      setNewLabel('')
-      setNewUrl('')
-      setNewIcon('')
+      setNewLabel(''); setNewUrl(''); setNewIcon('')
     } catch {
       setError('Erro de conexão ao adicionar link')
     } finally {
@@ -139,44 +150,47 @@ export default function BioEditorPage() {
   const handleDeleteItem = async (itemId: string) => {
     setDeletingId(itemId)
     try {
-      await fetch('/api/bio', {
+      const url = slug ? `/api/bio?slug=${slug}` : '/api/bio'
+      await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete_item', itemId }),
       })
       setBio(prev => prev ? { ...prev, items: prev.items.filter(i => i.id !== itemId) } : prev)
-    } catch {
-      // silently fail
-    } finally {
+    } catch {} finally {
       setDeletingId(null)
     }
   }
 
   const handleToggleItem = async (itemId: string, current: boolean) => {
     try {
-      await fetch('/api/bio', {
+      const url = slug ? `/api/bio?slug=${slug}` : '/api/bio'
+      await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update_item', itemId, active: !current }),
       })
       setBio(prev => prev ? { ...prev, items: prev.items.map(i => i.id === itemId ? { ...i, active: !current } : i) } : prev)
-    } catch {
-      // silently fail
-    }
+    } catch {}
   }
 
-  const bioUrl = username ? `${typeof window !== 'undefined' ? window.location.origin : ''}/u/${username}` : null
+  const bioUrl = bio ? `${typeof window !== 'undefined' ? window.location.origin : ''}/b/${bio.slug}` : null
   const topbar = useTopbar()
 
   useEffect(() => {
-    topbar.setTitle('Link-in-Bio')
+    topbar.setTitle(bio ? (bio.title || bio.slug) : 'Link-in-Bio')
     topbar.setSubtitle('Crie sua página pública com todos os seus links')
     topbar.setActions(
-      bioUrl && bio ? (
-        <a href={bioUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: '13px' }}>
-          Ver página →
-        </a>
-      ) : null
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <Link href="/bio-pages" className="btn btn-ghost" style={{ fontSize: '13px' }}>
+          ← Minhas Bios
+        </Link>
+        {bioUrl && bio && (
+          <a href={bioUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: '13px' }}>
+            Ver página →
+          </a>
+        )}
+      </div>
     )
   }, [bioUrl, bio])
 
@@ -188,10 +202,11 @@ export default function BioEditorPage() {
   }
   const lbl: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }
 
-  const displayInitial = (displayName || username || '?')[0]?.toUpperCase()
+  const displayInitial = (displayName || bio?.slug || '?')[0]?.toUpperCase()
   const activeItems = bio?.items.filter(i => i.active) || []
 
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Carregando...</div>
+  if (error && !bio) return <div style={{ padding: '40px', color: '#ef4444' }}>{error}</div>
 
   return (
     <>
@@ -203,20 +218,17 @@ export default function BioEditorPage() {
             <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Configurações da página</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={lbl}>Username <span style={{ color: '#ef4444' }}>*</span></label>
+                <label style={lbl}>Slug (URL) <span style={{ color: '#ef4444' }}>*</span></label>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-secondary)', borderRadius: '8px', overflow: 'hidden' }}>
                   <span style={{ padding: '0 10px', height: '40px', display: 'flex', alignItems: 'center', background: 'var(--bg-primary)', fontSize: '13px', color: 'var(--text-tertiary)', borderRight: '1px solid var(--border-secondary)', whiteSpace: 'nowrap' }}>
-                    123bit.app/u/
+                    123bit.app/b/
                   </span>
                   <input
-                    value={username}
-                    onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase())}
-                    placeholder="seunome"
+                    value={slugField}
+                    onChange={e => setSlugField(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                    placeholder="pessoal"
                     style={{ ...inp, border: 'none', borderRadius: 0, flex: 1 }}
                   />
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
-                  Este será o endereço da sua página: <strong style={{ color: 'var(--text-secondary)' }}>123bit.app/u/{username || '...'}</strong>
                 </div>
               </div>
               <div>
@@ -224,12 +236,9 @@ export default function BioEditorPage() {
                 <input
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
-                  placeholder={username ? `@${username}` : 'Seu nome ou marca'}
+                  placeholder={slugField ? `@${slugField}` : 'Seu nome ou marca'}
                   style={inp}
                 />
-                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
-                  Nome que aparece no topo da sua bio. Se vazio, usa o username.
-                </div>
               </div>
               <div>
                 <label style={lbl}>Bio (máx. 200 caracteres)</label>
@@ -280,7 +289,7 @@ export default function BioEditorPage() {
               </div>
               {error && <div style={{ fontSize: '13px', color: '#ef4444' }}>{error}</div>}
               {saved && !error && <div style={{ fontSize: '13px', color: '#22c55e' }}>Salvo com sucesso!</div>}
-              <button className="btn btn-primary" onClick={handleSavePage} disabled={saving || !username}>
+              <button className="btn btn-primary" onClick={handleSavePage} disabled={saving || !slugField}>
                 {saved ? 'Salvo!' : saving ? 'Salvando...' : bio ? 'Atualizar página' : 'Criar página'}
               </button>
             </div>
@@ -327,17 +336,16 @@ export default function BioEditorPage() {
             </div>
           )}
 
-          {/* CTA to create bio first */}
           {!bio && (
             <div className="card" style={{ padding: '24px', textAlign: 'center' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔗</div>
               <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '4px' }}>Crie sua página bio</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Preencha o username acima e clique em "Criar página" para começar.</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Preencha o slug acima e clique em "Criar página" para começar.</div>
             </div>
           )}
         </div>
 
-        {/* Right: Preview + items list */}
+        {/* Right: Preview + items list + metrics */}
         <div>
           {/* Phone preview */}
           <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
@@ -351,7 +359,7 @@ export default function BioEditorPage() {
                 {displayInitial}
               </div>
               <div style={{ fontSize: '15px', fontWeight: 700, color: theme === 'light' ? '#1a1a1a' : 'white', marginBottom: '4px' }}>
-                {displayName || (username ? `@${username}` : 'Seu nome')}
+                {displayName || (slugField ? `@${slugField}` : 'Seu nome')}
               </div>
               {bioText && <div style={{ fontSize: '11px', color: theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>{bioText.slice(0, 60)}{bioText.length > 60 ? '...' : ''}</div>}
               {activeItems.length === 0 && (bio?.items.length || 0) === 0 && (
@@ -413,17 +421,17 @@ export default function BioEditorPage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Métricas</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>{totalClicks}</strong> cliques totais
+                    <strong style={{ color: 'var(--text-primary)' }}>{totalClicks + bio.clicksTotal}</strong> cliques totais
                   </div>
                 </div>
-                {totalClicks === 0 ? (
+                {totalClicks === 0 && bio.clicksTotal === 0 ? (
                   <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-tertiary)', fontSize: '13px' }}>
                     Nenhum clique registrado ainda. Compartilhe sua bio para começar!
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {sorted.map((item, idx) => {
-                      const pct = Math.round((item.clicks / totalClicks) * 100)
+                      const pct = totalClicks > 0 ? Math.round((item.clicks / totalClicks) * 100) : 0
                       const barWidth = Math.round((item.clicks / maxClicks) * 100)
                       return (
                         <div key={item.id}>

@@ -54,7 +54,7 @@ model User {
   campaigns         Campaign[]
   webhooks          Webhook[]
   backupCodes       BackupCode[]
-  bioPage           BioPage?
+  bioPages          BioPage[]
   workspaceMemberships WorkspaceMember[]
 }
 
@@ -282,18 +282,22 @@ model WebhookDelivery {
 
 model BioPage {
   id          String   @id @default(cuid())
-  userId      String   @unique
-  username    String   @unique
+  userId      String
+  slug        String   @default("default")
   title       String?
   bio         String?
   theme       String   @default("dark")
   accentColor String   @default("#8B5CF6")
   published   Boolean  @default(true)
+  clicksTotal Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   items BioPageItem[]
+  clicks BioPageClick[]
+
+  @@unique([userId, slug], name: "BioPage_userId_slug_key")
 }
 
 model BioPageItem {
@@ -307,6 +311,28 @@ model BioPageItem {
   clicks    Int     @default(0)
 
   bioPage BioPage @relation(fields: [bioPageId], references: [id], onDelete: Cascade)
+}
+
+model BioPageClick {
+  id        String   @id @default(cuid())
+  bioPageId String
+  itemId    String?
+  country   String?
+  city      String?
+  region    String?
+  device    String?
+  browser   String?
+  os        String?
+  referrer  String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  bioPage BioPage @relation(fields: [bioPageId], references: [id], onDelete: Cascade)
+
+  @@index([bioPageId, timestamp])
+  @@index([bioPageId, country])
+  @@index([bioPageId, device])
+  @@index([bioPageId, referrer])
 }
 
 model Workspace {

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const pageSchema = z.object({
-  username:    z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/, 'Apenas letras, números, - e _'),
+  slug:        z.string().min(2).max(30).regex(/^[a-z0-9-]+$/, 'Apenas letras minúsculas, números e hífen'),
   title:       z.string().max(80).optional(),
   bio:         z.string().max(200).optional(),
   theme:       z.enum(['dark', 'light', 'purple']).optional().default('dark'),
@@ -20,12 +20,19 @@ const itemSchema = z.object({
   active: z.boolean().optional().default(true),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const bio = await prisma.bioPage.findUnique({
-    where: { userId: session.user.id },
+  const { searchParams } = new URL(req.url)
+  const slug = searchParams.get('slug')
+
+  const where = slug
+    ? { userId: session.user.id, slug }
+    : { userId: session.user.id }
+
+  const bio = await prisma.bioPage.findFirst({
+    where,
     include: { items: { orderBy: { order: 'asc' } } },
   })
 
@@ -37,9 +44,13 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+  const { searchParams } = new URL(req.url)
+  const slug = searchParams.get('slug')
 
   if (body.action === 'add_item') {
-    const bio = await prisma.bioPage.findUnique({ where: { userId: session.user.id } })
+    const bio = slug
+      ? await prisma.bioPage.findFirst({ where: { userId: session.user.id, slug } })
+      : await prisma.bioPage.findFirst({ where: { userId: session.user.id } })
     if (!bio) return NextResponse.json({ error: 'Página bio não encontrada. Crie a página primeiro.' }, { status: 404 })
 
     const parsed = itemSchema.safeParse(body.item)
@@ -51,19 +62,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ item }, { status: 201 })
   }
 
-  // Create page
+  // Create/update page
   const parsed = pageSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
 
-  const existing = await prisma.bioPage.findUnique({ where: { username: parsed.data.username } })
-  if (existing && existing.userId !== session.user.id) {
-    return NextResponse.json({ error: 'Este username já está em uso' }, { status: 409 })
+  const existing = await prisma.bioPage.findFirst({
+    where: { userId: session.user.id, slug: parsed.data.slug },
+  })
+
+  if (existing) {
+    // Update existing bio
+    const bio = await prisma.bioPage.update({
+      where: { id: existing.id },
+      data: {
+        title: parsed.data.title ?? existing.title,
+        bio: parsed.data.bio ?? existing.bio,
+        theme: parsed.data.theme,
+        accentColor: parsed.data.accentColor,
+        published: parsed.data.published,
+      },
+      include: { items: { orderBy: { order: 'asc' } } },
+    })
+    return NextResponse.json({ bio })
   }
 
-  const bio = await prisma.bioPage.upsert({
-    where: { userId: session.user.id },
-    create: { userId: session.user.id, ...parsed.data },
-    update: parsed.data,
+  // Create new bio
+  const bio = await prisma.bioPage.create({
+    data: {
+      userId: session.user.id,
+      slug: parsed.data.slug,
+      title: parsed.data.title || null,
+      bio: parsed.data.bio || null,
+      theme: parsed.data.theme,
+      accentColor: parsed.data.accentColor,
+      published: parsed.data.published,
+    },
     include: { items: { orderBy: { order: 'asc' } } },
   })
 
@@ -74,13 +107,18 @@ export async function PATCH(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { searchParams } = new URL(req.url)
+  const slug = searchParams.get('slug')
+
+  const bio = slug
+    ? await prisma.bioPage.findFirst({ where: { userId: session.user.id, slug } })
+    : await prisma.bioPage.findFirst({ where: { userId: session.user.id } })
+
+  if (!bio) return NextResponse.json({ error: 'Bio não encontrada' }, { status: 404 })
+
   const body = await req.json()
 
-  // Update item order (drag-and-drop)
   if (body.action === 'reorder' && Array.isArray(body.items)) {
-    const bio = await prisma.bioPage.findUnique({ where: { userId: session.user.id } })
-    if (!bio) return NextResponse.json({ error: 'Bio não encontrada' }, { status: 404 })
-
     await Promise.all(
       (body.items as { id: string; order: number }[]).map(({ id, order }) =>
         prisma.bioPageItem.updateMany({ where: { id, bioPageId: bio.id }, data: { order } })
@@ -89,23 +127,15 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true })
   }
 
-  // Update single item
   if (body.action === 'update_item' && body.itemId) {
-    const bio = await prisma.bioPage.findUnique({ where: { userId: session.user.id } })
-    if (!bio) return NextResponse.json({ error: 'Bio não encontrada' }, { status: 404 })
-
-    const item = await prisma.bioPageItem.updateMany({
+    await prisma.bioPageItem.updateMany({
       where: { id: body.itemId, bioPageId: bio.id },
       data: { active: body.active, label: body.label, url: body.url },
     })
-    return NextResponse.json({ success: true, item })
+    return NextResponse.json({ success: true })
   }
 
-  // Delete item
   if (body.action === 'delete_item' && body.itemId) {
-    const bio = await prisma.bioPage.findUnique({ where: { userId: session.user.id } })
-    if (!bio) return NextResponse.json({ error: 'Bio não encontrada' }, { status: 404 })
-
     await prisma.bioPageItem.deleteMany({ where: { id: body.itemId, bioPageId: bio.id } })
     return NextResponse.json({ success: true })
   }

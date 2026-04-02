@@ -1,13 +1,12 @@
 import { prisma } from '@/lib/db'
-import { notFound } from 'next/navigation'
-import BioPageClient from './BioPageClient'
+import { notFound, redirect } from 'next/navigation'
 
 interface Props { params: Promise<{ username: string }> }
 
 export async function generateMetadata({ params }: Props) {
   const { username } = await params
-  const bio = await prisma.bioPage.findUnique({
-    where: { username },
+  const bio = await prisma.bioPage.findFirst({
+    where: { slug: username },
     select: { title: true, bio: true },
   })
   return {
@@ -19,15 +18,12 @@ export async function generateMetadata({ params }: Props) {
 export default async function BioPublicPage({ params }: Props) {
   const { username } = await params
 
-  const bio = await prisma.bioPage.findUnique({
-    where: { username, published: true },
-    include: {
-      items: { where: { active: true }, orderBy: { order: 'asc' } },
-      user: { select: { image: true, name: true } },
-    },
+  const bio = await prisma.bioPage.findFirst({
+    where: { slug: username, published: true },
+    select: { slug: true },
   })
 
   if (!bio) notFound()
 
-  return <BioPageClient bio={bio} />
+  redirect(`/b/${bio.slug}`)
 }
