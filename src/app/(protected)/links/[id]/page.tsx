@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTopbar } from '@/components/layout/Topbar'
+import RouteRulesEditor from '@/components/links/RouteRulesEditor'
 
 interface AnalyticsData {
   summary: {
@@ -290,6 +291,13 @@ export default function LinkAnalyticsPage({ params }: { params: { id: string } }
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Smart Routing & A/B Testing */}
+      <div className="page-content" style={{ marginTop: '24px' }}>
+        <div className="card" style={{ padding: '24px' }}>
+          <RouteRulesEditor linkId={resolvedParams.id} />
         </div>
       </div>
     </div>
