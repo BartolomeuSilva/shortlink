@@ -41,13 +41,16 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
 
+  const userId = session.user.id
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const existing = await prisma.workspace.findUnique({ where: { slug: parsed.data.slug } })
   if (existing) return NextResponse.json({ error: 'Este slug já está em uso' }, { status: 409 })
 
   const workspace = await prisma.$transaction(async tx => {
     const ws = await tx.workspace.create({ data: { name: parsed.data.name, slug: parsed.data.slug } })
     await tx.workspaceMember.create({
-      data: { workspaceId: ws.id, userId: session.user.id, role: 'OWNER' },
+      data: { workspaceId: ws.id, userId, role: 'OWNER' },
     })
     return ws
   })
