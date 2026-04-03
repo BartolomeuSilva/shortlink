@@ -3,8 +3,9 @@
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/api/workspaces/route": "app/api/workspaces/route.js",
   "/api/bio-pages/[id]/analytics/route": "app/api/bio-pages/[id]/analytics/route.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/page": "app/page.js",
   "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js",
-  "/(protected)/campaigns/page": "app/(protected)/campaigns/page.js",
   "/(protected)/bio-pages/page": "app/(protected)/bio-pages/page.js",
   "/(protected)/bio-pages/[id]/analytics/page": "app/(protected)/bio-pages/[id]/analytics/page.js",
   "/(protected)/links/[id]/page": "app/(protected)/links/[id]/page.js"

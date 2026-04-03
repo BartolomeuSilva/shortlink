@@ -131,7 +131,7 @@ export default function BioPagesList() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', mt: '16px', paddingTop: '16px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', paddingTop: '16px' }}>
                   <Link href={`/bio?slug=${bio.slug}`} className="btn btn-ghost" style={{ flex: 1, fontSize: '12px', height: '36px' }}>
                     Editar
                   </Link>

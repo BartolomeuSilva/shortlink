@@ -256,7 +256,7 @@ export default function BioEditorPage() {
                    </div>
                  </div>
                  <div style={{ textAlign: 'right' }}>
-                    <label className="dash-label" style={{ display: 'block', mb: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Página Publicada</label>
+                    <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Página Publicada</label>
                     <label className="links-switch">
                       <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
                       <span className="links-slider"></span>
