@@ -29,6 +29,12 @@ const COUNTRY_NAMES: Record<string, string> = {
   CA: 'Canadá', AU: 'Austrália', MX: 'México', AR: 'Argentina',
 }
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  BR: '🇧🇷', US: '🇺🇸', PT: '🇵🇹', AR: '🇦🇷', MX: '🇲🇽',
+  GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷', ES: '🇪🇸', CA: '🇨🇦',
+  JP: '🇯🇵', CN: '🇨🇳', IN: '🇮🇳', RU: '🇷🇺', KR: '🇰🇷',
+}
+
 function getCountryName(code: string): string {
   return COUNTRY_NAMES[code] || code
 }
@@ -52,11 +58,9 @@ export default function BioAnalyticsPage({ params }: { params: { id: string } })
       if (res.ok) {
         const json = await res.json()
         setData(json)
-        topbar.setTitle('Analytics da Bio')
-        topbar.setSubtitle(`Últimos ${period} dias`)
       }
     } catch {
-      // silent
+      // silent handle
     } finally {
       setLoading(false)
     }
@@ -65,79 +69,108 @@ export default function BioAnalyticsPage({ params }: { params: { id: string } })
   useEffect(() => { fetchAnalytics() }, [fetchAnalytics])
 
   useEffect(() => {
+    topbar.setTitle('Analytics da Bio')
+    topbar.setSubtitle(`Desempenho da sua página nos últimos ${period} dias`)
     topbar.setActions(
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <select
           value={period}
           onChange={e => setPeriod(parseInt(e.target.value))}
-          style={{ padding: '8px 12px', fontSize: '13px', border: '1px solid var(--border-secondary)', borderRadius: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+          className="camp-input"
+          style={{ width: 'auto', height: '40px', padding: '0 12px', fontSize: '13px' }}
         >
           <option value={7}>7 dias</option>
           <option value={30}>30 dias</option>
           <option value={90}>90 dias</option>
         </select>
-        <Link href={`/bio?slug=${data ? '' : ''}`} className="btn btn-ghost" style={{ fontSize: '13px' }}>
-          ← Editar Bio
+        <Link href="/bio-pages" className="btn btn-ghost" style={{ fontSize: '13px', height: '40px' }}>
+          Voltar
         </Link>
       </div>
     )
-  }, [period, data])
+  }, [period, topbar])
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Carregando analytics...</div>
-  if (!data) return <div style={{ padding: '40px', color: '#ef4444' }}>Erro ao carregar dados</div>
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Carregando dados da Bio...</div>
+  
+  if (!data) return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <p style={{ color: '#ef4444', marginBottom: '20px' }}>Erro ao carregar dados do servidor.</p>
+      <Link href="/bio-pages" className="btn btn-secondary">Voltar para Minhas Bios</Link>
+    </div>
+  )
 
   const maxChartClicks = Math.max(...data.chartData.map(d => d.clicks), 1)
   const maxHourClicks = Math.max(...data.hourData.map(d => d.clicks), 1)
 
   return (
-    <>
-      <div className="page-content">
-        {/* Summary cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-          {[
-            { label: 'Cliques Totais', value: data.summary.totalClicks, color: 'var(--primary)' },
-            { label: 'Links Ativos', value: data.summary.totalItems, color: '#22c55e' },
-            { label: 'Top País', value: getCountryName(data.summary.topCountry), color: '#f59e0b' },
-            { label: 'Top Dispositivo', value: data.summary.topDevice, color: '#8b5cf6' },
-            { label: 'Top Browser', value: data.summary.topBrowser, color: '#3b82f6' },
-          ].map(card => (
-            <div key={card.label} className="card" style={{ padding: '16px 20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{card.label}</div>
-              <div style={{ fontSize: '22px', fontWeight: 600, color: card.color }}>{card.value}</div>
-            </div>
-          ))}
+    <div className="analytics-page">
+      
+      {/* Top 5 KPI Cards */}
+      <div className="analytics-metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        <div className="analytics-card">
+          <div className="analytics-metric-label">Cliques Totais</div>
+          <div className="analytics-metric-value">{data.summary.totalClicks.toLocaleString()}</div>
         </div>
-
-        {/* Clicks chart */}
-        <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Cliques ao Longo do Tempo</div>
-          {data.chartData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)', fontSize: '13px' }}>Nenhum clique no período</div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '120px' }}>
-              {data.chartData.map((d, i) => (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  {d.clicks > 0 && <span style={{ fontSize: '9px', color: 'var(--text-tertiary)' }}>{d.clicks}</span>}
-                  <div style={{
-                    width: '100%', maxWidth: '24px',
-                    height: `${Math.max((d.clicks / maxChartClicks) * 100, 4)}%`,
-                    background: 'var(--primary)',
-                    borderRadius: '3px 3px 0 0',
-                    transition: 'height 300ms',
-                  }} />
-                  <span style={{ fontSize: '9px', color: 'var(--text-tertiary)', transform: 'rotate(-45deg)', whiteSpace: 'nowrap' }}>
-                    {d.date.slice(5)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="analytics-card">
+          <div className="analytics-metric-label">Links Ativos</div>
+          <div className="analytics-metric-value" style={{ color: '#10b981' }}>{data.summary.totalItems}</div>
         </div>
+        <div className="analytics-card" title={getCountryName(data.summary.topCountry)}>
+          <div className="analytics-metric-label">Top País</div>
+          <div className="analytics-metric-value" style={{ fontSize: '24px' }}>
+            {COUNTRY_FLAGS[data.summary.topCountry] || '🌍'} {data.summary.topCountry}
+          </div>
+        </div>
+        <div className="analytics-card">
+          <div className="analytics-metric-label">Top Device</div>
+          <div className="analytics-metric-value" style={{ fontSize: '24px' }}>
+             {data.summary.topDevice === 'Mobile' ? '📱' : '💻'} {data.summary.topDevice}
+          </div>
+        </div>
+        <div className="analytics-card">
+          <div className="analytics-metric-label">Top Browser</div>
+          <div className="analytics-metric-value" style={{ fontSize: '24px' }}>
+            {data.summary.topBrowser === 'Chrome' ? '🌐' : '🧭'} {data.summary.topBrowser}
+          </div>
+        </div>
+      </div>
 
-        {/* Hour heatmap */}
-        <div className="card" style={{ padding: '20px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Cliques por Horário</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '4px' }}>
+      {/* Main Bar Chart */}
+      <div className="analytics-chart-container">
+        <div className="analytics-chart-header">
+           <h3 className="analytics-chart-title">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20V10M18 20V4M6 20v-4" /></svg>
+             Acessos Mensais
+           </h3>
+        </div>
+        
+        {data.chartData.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados no período</div>
+        ) : (
+          <div className="analytics-bar-wrapper">
+            {data.chartData.map((d, i) => (
+              <div 
+                key={i} 
+                className="analytics-bar" 
+                style={{ height: `${(d.clicks / maxChartClicks) * 100}%` }}
+                title={`${d.date}: ${d.clicks} cliques`}
+              />
+            ))}
+          </div>
+        )}
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '10px', color: 'var(--text-tertiary)' }}>
+           <span>{data.chartData[0]?.date}</span>
+           <span>{data.chartData[data.chartData.length - 1]?.date}</span>
+        </div>
+      </div>
+
+      {/* Hourly Heatmap - Premium Look */}
+      <div className="analytics-chart-container">
+         <div className="analytics-chart-header">
+            <h3 className="analytics-chart-title">Acessos por Horário</h3>
+         </div>
+         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '6px' }}>
             {Array.from({ length: 24 }, (_, h) => {
               const hourData = data.hourData.find(d => d.hour === h)
               const clicks = hourData?.clicks || 0
@@ -145,164 +178,106 @@ export default function BioAnalyticsPage({ params }: { params: { id: string } })
               return (
                 <div key={h} style={{ textAlign: 'center' }}>
                   <div style={{
-                    height: '40px', borderRadius: '4px',
-                    background: intensity > 0 ? `rgba(139,92,246,${intensity})` : 'var(--bg-primary)',
-                    marginBottom: '4px',
+                    height: '48px', borderRadius: '8px', border: '1px solid var(--border-primary)',
+                    background: intensity > 0 ? `color-mix(in srgb, var(--primary) ${intensity * 100}%, var(--bg-tertiary))` : 'var(--bg-tertiary)',
                   }} title={`${h}h: ${clicks} cliques`} />
-                  <div style={{ fontSize: '9px', color: 'var(--text-tertiary)' }}>{h}h</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '4px' }}>{h}h</div>
                 </div>
               )
             })}
-          </div>
-        </div>
+         </div>
+      </div>
 
-        {/* Two column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {/* Devices */}
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Dispositivos</div>
-            {data.devices.length === 0 ? (
-              <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {data.devices.map(d => (
-                  <div key={d.device}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{d.device}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{d.clicks}</span>
-                    </div>
-                    <div style={{ height: '4px', background: 'var(--bg-primary)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(d.clicks / (data.devices[0]?.clicks || 1)) * 100}%`, background: '#8b5cf6', borderRadius: '2px' }} />
-                    </div>
-                  </div>
-                ))}
+      {/* Two Column Progress Lists */}
+      <div className="analytics-sub-grid">
+         {/* Countries */}
+         <div className="dash-card">
+            <h3 className="analytics-chart-title" style={{ marginBottom: '24px' }}>Distribuição Geográfica</h3>
+            {data.countries.map(d => (
+              <div key={d.country} className="analytics-progress-item">
+                <div className="analytics-progress-header">
+                  <span className="analytics-progress-label">{COUNTRY_FLAGS[d.country] || '🌍'} {getCountryName(d.country)}</span>
+                  <span className="analytics-progress-value">{d.clicks}</span>
+                </div>
+                <div className="analytics-progress-bar-bg">
+                   <div className="analytics-progress-bar-fill" style={{ width: `${(d.clicks / (data.countries[0]?.clicks || 1)) * 100}%` }} />
+                </div>
               </div>
-            )}
-          </div>
+            ))}
+         </div>
 
-          {/* Browsers */}
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Navegadores</div>
-            {data.browsers.length === 0 ? (
-              <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {data.browsers.map(d => (
-                  <div key={d.browser}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{d.browser}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{d.clicks}</span>
-                    </div>
-                    <div style={{ height: '4px', background: 'var(--bg-primary)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(d.clicks / (data.browsers[0]?.clicks || 1)) * 100}%`, background: '#3b82f6', borderRadius: '2px' }} />
-                    </div>
-                  </div>
-                ))}
+         {/* Referrers */}
+         <div className="dash-card">
+            <h3 className="analytics-chart-title" style={{ marginBottom: '24px' }}>Origem do Tráfego</h3>
+            {data.referrers.map(d => (
+              <div key={d.referrer} className="analytics-progress-item">
+                <div className="analytics-progress-header">
+                  <span className="analytics-progress-label">🔗 {getDomainFromReferrer(d.referrer)}</span>
+                  <span className="analytics-progress-value">{d.clicks}</span>
+                </div>
+                <div className="analytics-progress-bar-bg">
+                   <div className="analytics-progress-bar-fill" style={{ width: `${(d.clicks / (data.referrers[0]?.clicks || 1)) * 100}%`, background: 'var(--primary-light)' }} />
+                </div>
               </div>
-            )}
-          </div>
+            ))}
+         </div>
+      </div>
 
-          {/* OS */}
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Sistemas Operacionais</div>
-            {data.os.length === 0 ? (
-              <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {data.os.map(d => (
-                  <div key={d.os}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{d.os}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{d.clicks}</span>
-                    </div>
-                    <div style={{ height: '4px', background: 'var(--bg-primary)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(d.clicks / (data.os[0]?.clicks || 1)) * 100}%`, background: '#22c55e', borderRadius: '2px' }} />
-                    </div>
+      {/* Top Items - Most Important for Bio */}
+      <div className="dash-card" style={{ marginTop: '24px' }}>
+         <h3 className="analytics-chart-title" style={{ marginBottom: '24px' }}>Links Mais Clicados na Bio</h3>
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {data.topItems.map((item, idx) => {
+              const maxItemClicks = data.topItems[0]?.clicks || 1
+              return (
+                <div key={item.id} className="analytics-progress-item">
+                  <div className="analytics-progress-header">
+                    <span className="analytics-progress-label" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                      <span style={{ fontSize: '18px', marginRight: '8px' }}>{item.icon || '🔗'}</span>
+                      {item.label}
+                    </span>
+                    <span className="analytics-progress-value" style={{ fontSize: '16px' }}>{item.clicks} <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-tertiary)' }}>cliques</span></span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Countries */}
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Países</div>
-            {data.countries.length === 0 ? (
-              <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {data.countries.map(d => (
-                  <div key={d.country}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{getCountryName(d.country)}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{d.clicks}</span>
-                    </div>
-                    <div style={{ height: '4px', background: 'var(--bg-primary)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(d.clicks / (data.countries[0]?.clicks || 1)) * 100}%`, background: '#f59e0b', borderRadius: '2px' }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Referrers */}
-        <div className="card" style={{ padding: '20px', marginTop: '16px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Fontes de Tráfego</div>
-          {data.referrers.length === 0 ? (
-            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {data.referrers.map(d => (
-                <div key={d.referrer}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{getDomainFromReferrer(d.referrer)}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{d.clicks}</span>
-                  </div>
-                  <div style={{ height: '4px', background: 'var(--bg-primary)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(d.clicks / (data.referrers[0]?.clicks || 1)) * 100}%`, background: '#ec4899', borderRadius: '2px' }} />
+                  <div className="analytics-progress-bar-bg" style={{ height: '12px' }}>
+                     <div className="analytics-progress-bar-fill" style={{ width: `${(item.clicks / maxItemClicks) * 100}%`, background: idx === 0 ? 'var(--primary)' : 'color-mix(in srgb, var(--primary) 40%, white)' }} />
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Top items */}
-        <div className="card" style={{ padding: '20px', marginTop: '16px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Links Mais Clicados</div>
-          {data.topItems.length === 0 ? (
-            <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>Sem dados</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {data.topItems.map((item, idx) => {
-                const totalItemClicks = data.topItems.reduce((s, i) => s + i.clicks, 0) || 1
-                const pct = Math.round((item.clicks / totalItemClicks) * 100)
-                return (
-                  <div key={item.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
-                        {item.icon} {item.label}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{item.clicks} ({pct}%)</span>
-                    </div>
-                    <div style={{ height: '4px', background: 'var(--bg-primary)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${(item.clicks / (data.topItems[0]?.clicks || 1)) * 100}%`,
-                        background: idx === 0 ? 'var(--primary)' : 'var(--text-tertiary)',
-                        borderRadius: '2px',
-                        opacity: idx === 0 ? 1 : 0.5,
-                      }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+              )
+            })}
+         </div>
       </div>
-    </>
+
+      {/* Tech Stack Grid */}
+      <div className="analytics-triple-grid" style={{ marginTop: '24px' }}>
+         <div className="dash-card">
+            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Dispositivos</h3>
+            {data.devices.map(d => (
+              <div key={d.device} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                 <span style={{ color: 'var(--text-secondary)' }}>{d.device}</span>
+                 <span style={{ fontWeight: 700 }}>{d.clicks}</span>
+              </div>
+            ))}
+         </div>
+         <div className="dash-card">
+            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Navegadores</h3>
+            {data.browsers.map(d => (
+              <div key={d.browser} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                 <span style={{ color: 'var(--text-secondary)' }}>{d.browser}</span>
+                 <span style={{ fontWeight: 700 }}>{d.clicks}</span>
+              </div>
+            ))}
+         </div>
+         <div className="dash-card">
+            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Sistemas</h3>
+            {data.os.map(d => (
+              <div key={d.os} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                 <span style={{ color: 'var(--text-secondary)' }}>{d.os}</span>
+                 <span style={{ fontWeight: 700 }}>{d.clicks}</span>
+              </div>
+            ))}
+         </div>
+      </div>
+
+    </div>
   )
 }
