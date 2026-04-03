@@ -5,6 +5,7 @@
 
 :root {
   --primary: #534AB7;
+  --primary-rgb: 83, 74, 183;
   --primary-hover: #4540A0;
   --primary-light: #7F77DD;
   --purple-50: #EEEDFE;
@@ -2244,6 +2245,12 @@ footer {
   flex: none;
 }
 
+.sidebar.collapsed .sidebar-logo img {
+  height: 24px !important;
+  width: 24px !important;
+  object-fit: contain;
+}
+
 .sidebar.collapsed .sidebar-collapse-btn {
   margin: 0 auto;
 }
@@ -2370,7 +2377,7 @@ footer {
   z-index: 45;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 40px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -2751,6 +2758,56 @@ footer {
     margin-left: 0;
     padding-top: 56px;
   }
+}
+
+/* GLOBAL PAGE WRAPPER */
+.page-content {
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 32px 24px;
+    align-items: stretch;
+  }
+}
+
+/* FORMS & INPUTS */
+.input-field {
+  width: 100%;
+  height: 48px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 14px;
+  padding: 0 16px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.input-field::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.input-field:hover {
+  border-color: var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.input-field:focus {
+  background: var(--bg-primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
 /* =============================================
@@ -4436,4 +4493,1104 @@ footer {
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* =============================================
+   SETTINGS — Modern App Design
+   ============================================= */
+
+.settings-container {
+  width: 100%;
+  max-width: 680px;
+}
+
+.settings-profile-card {
+  padding: 32px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.settings-avatar-big {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+  border: 2px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.settings-avatar-big img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+  margin-left: 8px;
+}
+
+.settings-info-list {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.settings-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-primary);
+  transition: background 150ms ease;
+}
+
+.settings-info-row:last-child {
+  border-bottom: none;
+}
+
+.settings-info-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.settings-info-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.settings-info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-hint {
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  border-left: 4px solid var(--primary);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.settings-hint svg {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.settings-hint-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .settings-profile-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
+}
+
+/* =============================================
+   SECURITY — Modern App Design
+   ============================================= */
+
+.security-card {
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 24px;
+}
+
+.security-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.security-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.security-status-text {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.security-setup-box {
+  border-top: 1px solid var(--border-primary);
+  padding: 24px;
+  background: var(--bg-tertiary);
+}
+
+.security-qr-container {
+  padding: 16px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid var(--border-secondary);
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.security-otp-input {
+  width: 100%;
+  height: 64px;
+  text-align: center;
+  font-family: var(--font-dm-mono, monospace);
+  font-size: 28px;
+  letter-spacing: 12px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-secondary);
+  border-radius: 16px;
+  outline: none;
+  transition: all 200ms ease;
+  margin: 16px 0;
+}
+
+.security-otp-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.security-backup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 8px;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.security-backup-item {
+  font-family: var(--font-dm-mono, monospace);
+  font-size: 13px;
+  padding: 10px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-secondary);
+  text-align: center;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+.security-badge-success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.security-badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.security-badge-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* =============================================
+   PIXELS — Modern App Design
+   ============================================= */
+
+.pixels-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  grid-gap: 16px;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .pixels-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .pixels-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.pixel-card {
+  padding: 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 200ms ease;
+}
+
+.pixel-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-primary-hover);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+}
+
+.pixel-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pixel-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.pixel-info {
+  flex: 1 1;
+  min-width: 0;
+}
+
+.pixel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.pixel-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.pixel-badge-active {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =============================================
+   MEMBERS & INVITES — Modern App Design
+   ============================================= */
+
+.member-list-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 16px;
+  margin-left: 8px;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  transition: all 200ms ease;
+  margin-bottom: 8px;
+}
+
+.member-item:hover {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.member-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.member-info {
+  flex: 1 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-email {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invite-form {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.invite-input-wrap {
+  flex: 1 1;
+  min-width: 0;
+}
+
+.invite-select {
+  width: 140px;
+  height: 48px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 14px;
+  padding: 0 14px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: all 200ms ease;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.invite-select:hover {
+  border-color: var(--border-primary);
+  background-color: var(--bg-secondary);
+}
+
+.invite-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.roles-legend {
+  margin-top: 32px;
+  padding: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  border: 1px solid var(--border-primary);
+}
+
+.roles-legend-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.roles-legend-item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.roles-legend-item strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .invite-form {
+    flex-direction: column;
+  }
+  
+  .invite-select {
+    width: 100%;
+  }
+  
+  .member-item {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+}
+
+/* =============================================
+   HEALTH MONITOR — Modern App Design
+   ============================================= */
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 16px;
+  gap: 16px;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 24px;
+}
+
+.health-kpi-card {
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.health-kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.health-kpi-online { border-left: 4px solid #22c55e; }
+.health-kpi-online .health-kpi-value { color: #22c55e; }
+
+.health-kpi-error { border-left: 4px solid #ef4444; }
+.health-kpi-error .health-kpi-value { color: #ef4444; }
+
+.health-kpi-warning { border-left: 4px solid #f59e0b; }
+.health-kpi-warning .health-kpi-value { color: #f59e0b; }
+
+.health-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.health-item {
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 200ms ease;
+}
+
+.health-item:hover {
+  border-color: var(--border-secondary);
+  transform: translateX(4px);
+}
+
+.health-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.health-status-dot.ok {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+}
+
+.health-status-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.health-status-dot.warning {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+}
+
+.health-item-info {
+  flex: 1 1;
+  min-width: 0;
+}
+
+.health-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.health-item-url {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.health-item-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.health-status-text {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.health-last-check {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.health-btn-refresh {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.health-btn-refresh:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+}
+
+.health-btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .health-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .health-item {
+    flex-wrap: wrap;
+  }
+  
+  .health-btn-refresh {
+    margin-left: auto;
+  }
+}
+
+/* =============================================
+   WORKSPACES — Modern App Design
+   ============================================= */
+
+.ws-container {
+  max-width: 800px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.ws-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  padding: 20px 24px;
+  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.ws-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.ws-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.ws-info {
+  flex: 1 1;
+  min-width: 0;
+}
+
+.ws-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.ws-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ws-role-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ws-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ws-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.ws-meta-item svg {
+  color: var(--text-tertiary);
+}
+
+.ws-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Empty State */
+.ws-empty {
+  padding: 80px 40px;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-secondary);
+  border-radius: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ws-empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: var(--bg-tertiary);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.ws-empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.ws-empty-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 380px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+/* Form Styles */
+.ws-form-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--primary-light);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 32px;
+  animation: slideUp 400ms ease;
+}
+
+.ws-form-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ws-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 24px;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .ws-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ws-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px;
+  }
+  
+  .ws-actions {
+    width: 100%;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-primary);
+    padding-top: 16px;
+  }
+}
+
+/* =============================================
+   SETTINGS COMPONENTS — Premium Action Cards
+   ============================================= */
+
+.settings-action-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (min-width: 1024px) {
+  .settings-action-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.settings-action-header {
+  flex: 1 1;
+  max-width: 600px;
+}
+
+.settings-action-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: var(--text-primary);
+  margin-bottom: 8px !important;
+  letter-spacing: -0.02em;
+}
+
+.settings-action-description {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings-action-form {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .settings-action-form {
+    width: auto;
+    min-width: 400px;
+    justify-content: flex-end;
+  }
+}
+
+.settings-input-group-modern {
+  position: relative;
+  width: 100%;
+}
+
+.settings-input-modern {
+  width: 100%;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 0 16px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.settings-input-modern:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.settings-section-title {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: var(--text-primary);
+  margin: 32px 0 16px 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =============================================
+   SECURITY — Modern App Design (Refined)
+   ============================================= */
+
+.security-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 200ms ease;
+  animation: slideUp 500ms ease backwards;
+}
+
+.security-header {
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-primary);
+  background: rgba(var(--primary-rgb), 0.03);
+}
+
+.security-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.security-badge-success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.security-badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.security-status-text {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.security-setup-box {
+  padding: 32px;
+  animation: fadeIn 300ms ease;
+}
+
+.security-qr-container {
+  width: 180px;
+  height: 180px;
+  padding: 12px;
+  background: white;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.security-qr-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.security-otp-input {
+  width: 100%;
+  max-width: 320px;
+  height: 64px;
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--border-secondary);
+  border-radius: 16px;
+  margin: 24px 0;
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 200ms ease;
+  display: block;
+}
+
+.security-otp-input:focus {
+  border-color: var(--primary);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.security-backup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 12px;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.security-backup-item {
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 12px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+@media (max-width: 640px) {
+  .security-header {
+    padding: 24px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  
+  .security-header .btn {
+    width: 100%;
+  }
+  
+  .security-backup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =============================================
+   UTILITIES — Responsive Layouts
+   ============================================= */
+
+.flex-col {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.flex-row {
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+@media (min-width: 768px) {
+  .flex-row-md {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+  
+  .items-center-md {
+    align-items: center !important;
+  }
+  
+  .justify-between-md {
+    justify-content: space-between !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .hide-mobile {
+    display: none !important;
+  }
 }

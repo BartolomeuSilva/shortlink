@@ -31,10 +31,32 @@ function WorkspaceProviderInner({ children }: { children: React.ReactNode }) {
   const refreshWorkspaces = async () => {
     try {
       const res = await fetch('/api/workspaces')
+      
+      // Se não estiver autorizado (ex: sessão expirada localmente), não spamar o console com erro de JSON
+      if (res.status === 401) {
+        setWorkspaces([])
+        setLoading(false)
+        return
+      }
+
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('application/json')) {
+        // Apenas logar se não for um redirecionamento de auth (que geralmente retorna HTML)
+        if (!res.redirected) {
+          console.error('Erro ao carregar workspaces: resposta não-JSON', res.status)
+        }
+        return
+      }
+      
       const data = await res.json()
+      if (data.error) { 
+        console.error('Erro ao carregar workspaces:', data.error)
+        return 
+      }
       setWorkspaces(data.workspaces || [])
     } catch (error) {
-      console.error('Erro ao carregar workspaces:', error)
+      // Evitar logar "Failed to fetch" se o erro for apenas falta de rede ou interrupção local comum
+      console.debug('Erro ao carregar workspaces:', error)
     } finally {
       setLoading(false)
     }
@@ -66,6 +88,7 @@ function WorkspaceProviderInner({ children }: { children: React.ReactNode }) {
     }
     
     router.push(`${pathname}?${params.toString()}`)
+    router.refresh()
   }
 
   return (

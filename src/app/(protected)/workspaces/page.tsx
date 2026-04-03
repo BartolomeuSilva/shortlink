@@ -14,8 +14,19 @@ interface Workspace {
   createdAt: string
 }
 
-const ROLE_LABELS: Record<string, string> = { OWNER: 'Owner', ADMIN: 'Admin', EDITOR: 'Editor', VIEWER: 'Viewer' }
-const ROLE_COLORS: Record<string, string> = { OWNER: '#8b5cf6', ADMIN: '#3b82f6', EDITOR: '#22c55e', VIEWER: 'var(--text-tertiary)' }
+const ROLE_LABELS: Record<string, string> = { 
+  OWNER: 'Proprietário', 
+  ADMIN: 'Administrador', 
+  EDITOR: 'Editor', 
+  VIEWER: 'Visualizador' 
+}
+
+const ROLE_COLORS: Record<string, string> = { 
+  OWNER: '#8b5cf6', 
+  ADMIN: '#3b82f6', 
+  EDITOR: '#22c55e', 
+  VIEWER: 'var(--text-tertiary)' 
+}
 
 export default function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
@@ -30,151 +41,226 @@ export default function WorkspacesPage() {
 
   useEffect(() => {
     topbar.setTitle('Workspaces')
-    topbar.setSubtitle('Colabore em equipe com acesso compartilhado a links e analytics')
+    topbar.setSubtitle('Gerencie espaços de colaboração para sua equipe')
     topbar.setActions(
-      <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
-        {showForm ? 'Cancelar' : '+ Novo workspace'}
+      <button 
+        className={`btn ${showForm ? 'btn-ghost' : 'btn-primary'}`} 
+        onClick={() => setShowForm(v => !v)}
+      >
+        {showForm ? 'Cancelar' : (
+          <>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Novo Workspace
+          </>
+        )}
       </button>
     )
   }, [showForm])
 
   const load = async () => {
-    const res = await fetch('/api/workspaces')
-    const data = await res.json()
-    setWorkspaces(data.workspaces || [])
-    setLoading(false)
+    try {
+      const res = await fetch('/api/workspaces')
+      if (!res.ok) { setLoading(false); return }
+      const data = await res.json()
+      setWorkspaces(data.workspaces || [])
+    } catch (e) {
+      console.error('Erro ao carregar workspaces:', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [])
 
   const handleCreate = async () => {
+    if (!name.trim() || !slug.trim()) return
     setCreating(true)
     setError('')
     try {
       const res = await fetch('/api/workspaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, slug }),
+        body: JSON.stringify({ name: name.trim(), slug: slug.trim() }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Erro'); return }
+      if (!res.ok) { setError(data.error || 'Erro ao criar workspace'); return }
       setWorkspaces(prev => [...prev, { ...data.workspace, role: 'OWNER', memberCount: 1 }])
       setShowForm(false); setName(''); setSlug('')
+    } catch (e) {
+      setError('Erro de conexão com o servidor')
     } finally {
       setCreating(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('Tem certeza que deseja excluir este workspace? Todos os links vinculados a ele serão perdidos.')) return
+    
     setDeletingId(id)
-    await fetch(`/api/workspaces/${id}`, { method: 'DELETE' })
-    setWorkspaces(prev => prev.filter(w => w.id !== id))
-    setDeletingId(null)
+    try {
+      const res = await fetch(`/api/workspaces/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setWorkspaces(prev => prev.filter(w => w.id !== id))
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
-    <>
-      <div className="page-content" style={{ maxWidth: '720px' }}>
+    <div className="page-content">
+      <div className="ws-container">
+        {/* Form para novo workspace */}
         {showForm && (
-          <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '14px' }}>Novo workspace</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nome *</label>
+          <div className="ws-form-card">
+            <h3 className="ws-form-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" color="var(--primary)">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              Criar Novo Espaço de Trabalho
+            </h3>
+            
+            <div className="ws-form-grid">
+              <div className="profile-input-group" style={{ marginBottom: 0 }}>
+                <label className="profile-label">Nome do Workspace</label>
                 <input
+                  className="profile-input"
                   value={name}
                   onChange={e => {
                     setName(e.target.value)
                     setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))
                   }}
-                  placeholder="Minha empresa"
-                  style={{ width: '100%', height: '40px', fontFamily: 'inherit', fontSize: '13px', color: 'var(--text-primary)', background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)', borderRadius: '8px', padding: '0 12px', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="Ex: Marketing Digital"
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Slug (URL única) *</label>
+              <div className="profile-input-group" style={{ marginBottom: 0 }}>
+                <label className="profile-label">Slug amigável (URL)</label>
                 <input
+                  className="profile-input"
+                  style={{ fontFamily: 'var(--font-dm-mono)' }}
                   value={slug}
                   onChange={e => setSlug(e.target.value.replace(/[^a-z0-9-]/g, ''))}
-                  placeholder="minha-empresa"
-                  style={{ width: '100%', height: '40px', fontFamily: 'var(--font-dm-mono, monospace)', fontSize: '13px', color: 'var(--text-primary)', background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)', borderRadius: '8px', padding: '0 12px', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="marketing-digital"
                 />
               </div>
-              {error && <div style={{ fontSize: '13px', color: '#ef4444' }}>{error}</div>}
-              <button className="btn btn-primary" onClick={handleCreate} disabled={creating || !name || !slug}>
-                {creating ? 'Criando...' : 'Criar workspace'}
+            </div>
+
+            {error && <div className="settings-alert settings-alert-error" style={{ marginBottom: '20px' }}>{error}</div>}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleCreate} 
+                disabled={creating || !name || !slug}
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                {creating ? 'Criando...' : 'Confirmar Criação'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setShowForm(false)}>
+                Cancelar
               </button>
             </div>
           </div>
         )}
 
-        {workspaces.length === 0 && !loading ? (
-          <div className="card" style={{ padding: '48px', textAlign: 'center' }}>
-            <div style={{
-              width: '52px', height: '52px', borderRadius: '14px', margin: '0 auto 16px',
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
-              border: '1px solid var(--border-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6',
-            }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        {/* Lista de Workspaces */}
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="profile-spinner" style={{ marginBottom: '12px' }}>
+              <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+            </svg>
+            <p>Carregando seus espaços...</p>
+          </div>
+        ) : workspaces.length === 0 ? (
+          <div className="ws-empty">
+            <div className="ws-empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
               </svg>
             </div>
-            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '6px' }}>Nenhum workspace ainda</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', maxWidth: '300px', margin: '0 auto' }}>
-              Crie um workspace para colaborar com sua equipe e gerenciar links juntos.
-            </div>
+            <h3 className="ws-empty-title">Nenhum workspace encontrado</h3>
+            <p className="ws-empty-desc">
+              Comece criando um workspace para convidar sua equipe e organizar seus links e páginas de forma profissional.
+            </p>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              + Criar primeiro workspace
+            </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="ws-list">
             {workspaces.map(ws => (
-              <div key={ws.id} className="card" style={{ padding: '18px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '42px', height: '42px', borderRadius: '10px', flexShrink: 0,
-                    background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '16px', fontWeight: 700, color: 'white',
-                  }}>
-                    {ws.name[0].toUpperCase()}
-                  </div>
+              <Link href={`/workspaces/${ws.id}`} key={ws.id} className="ws-card">
+                <div className="ws-avatar">
+                  {ws.name.substring(0, 2).toUpperCase()}
+                </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{ws.name}</span>
-                      <span style={{ fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '99px', background: `${ROLE_COLORS[ws.role]}18`, color: ROLE_COLORS[ws.role], border: `0.5px solid ${ROLE_COLORS[ws.role]}40` }}>
-                        {ROLE_LABELS[ws.role]}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-mono, monospace)' }}>/{ws.slug}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{ws.memberCount} membros</span>
-                    </div>
+                <div className="ws-info">
+                  <div className="ws-name-row">
+                    <span className="ws-name">{ws.name}</span>
+                    <span 
+                      className="ws-role-badge" 
+                      style={{ 
+                        background: `${ROLE_COLORS[ws.role]}15`, 
+                        color: ROLE_COLORS[ws.role],
+                        border: `1px solid ${ROLE_COLORS[ws.role]}30`
+                      }}
+                    >
+                      {ROLE_LABELS[ws.role]}
+                    </span>
                   </div>
-
-                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                    <Link href={`/workspaces/${ws.id}`} className="btn btn-ghost" style={{ fontSize: '12px', padding: '6px 14px', height: '32px' }}>
-                      Gerenciar
-                    </Link>
-                    {ws.role === 'OWNER' && (
-                      <button
-                        onClick={() => handleDelete(ws.id)}
-                        disabled={deletingId === ws.id}
-                        style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border-secondary)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6M9 6V4h6v2" />
-                        </svg>
-                      </button>
-                    )}
+                  <div className="ws-meta">
+                    <div className="ws-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
+                      </svg>
+                      <span className="font-mono">/{ws.slug}</span>
+                    </div>
+                    <div className="ws-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 010 7.75"></path>
+                      </svg>
+                      <span>{ws.memberCount} {ws.memberCount === 1 ? 'membro' : 'membros'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                <div className="ws-actions">
+                  <div className="btn btn-ghost" style={{ fontSize: '13px' }}>Gerenciar</div>
+                  {ws.role === 'OWNER' && (
+                    <button
+                      onClick={(e) => handleDelete(e, ws.id)}
+                      disabled={deletingId === ws.id}
+                      className="btn btn-ghost"
+                      style={{ padding: '8px', color: 'var(--text-tertiary)', minWidth: '40px' }}
+                    >
+                      {deletingId === ws.id ? (
+                        <svg className="profile-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </Link>
             ))}
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 }

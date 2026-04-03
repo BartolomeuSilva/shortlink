@@ -13,11 +13,11 @@ interface LinkHealth {
   clickCount: number
 }
 
-const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  ok:      { label: 'Online',  color: '#22c55e', dot: '#22c55e' },
-  error:   { label: 'Erro',    color: '#ef4444', dot: '#ef4444' },
-  timeout: { label: 'Timeout', color: '#f59e0b', dot: '#f59e0b' },
-  unknown: { label: 'Não verificado', color: 'var(--text-tertiary)', dot: 'var(--border-secondary)' },
+const statusConfig: Record<string, { label: string; color: string; class: string }> = {
+  ok:      { label: 'Online',  color: '#22c55e', class: 'ok' },
+  error:   { label: 'Erro',    color: '#ef4444', class: 'error' },
+  timeout: { label: 'Timeout', color: '#f59e0b', class: 'warning' },
+  unknown: { label: 'Pendente', color: 'var(--text-tertiary)', class: 'unknown' },
 }
 
 function getStatus(s: string | null) {
@@ -25,14 +25,14 @@ function getStatus(s: string | null) {
 }
 
 function timeAgo(date: string | null): string {
-  if (!date) return 'Nunca'
+  if (!date) return 'Nunca verificado'
   const diff = Date.now() - new Date(date).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'Agora mesmo'
-  if (mins < 60) return `${mins}min atrás`
+  if (mins < 60) return `Há ${mins}m`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h atrás`
-  return `${Math.floor(hrs / 24)}d atrás`
+  if (hrs < 24) return `Há ${hrs}h`
+  return `Há ${Math.floor(hrs / 24)}d`
 }
 
 export default function HealthPage() {
@@ -42,29 +42,57 @@ export default function HealthPage() {
   const [bulkChecking, setBulkChecking] = useState(false)
   const topbar = useTopbar()
 
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/links/health')
+      const data = await res.json()
+      setLinks(data.links || [])
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const checkAll = async () => {
+    setBulkChecking(true)
+    try {
+      await fetch('/api/links/health', { method: 'PATCH' })
+      await load()
+    } finally {
+      setBulkChecking(false)
+    }
+  }
+
   useEffect(() => {
     topbar.setTitle('Health Monitor')
-    topbar.setSubtitle('Monitore se os destinos dos seus links estão online')
+    topbar.setSubtitle('Status em tempo real dos destinos dos seus links')
     topbar.setActions(
       <button
         className="btn btn-primary"
         onClick={checkAll}
-        disabled={bulkChecking}
-        style={{ whiteSpace: 'nowrap' }}
+        disabled={bulkChecking || loading}
       >
-        {bulkChecking ? 'Verificando...' : 'Verificar todos'}
+        {bulkChecking ? (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="profile-spinner" style={{ marginRight: '8px' }}>
+              <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+            </svg>
+            Verificando...
+          </>
+        ) : (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path>
+            </svg>
+            Verificar Todos
+          </>
+        )}
       </button>
     )
-  }, [bulkChecking])
-
-  const load = useCallback(async () => {
-    const res = await fetch('/api/links/health')
-    const data = await res.json()
-    setLinks(data.links || [])
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { load() }, [load])
+  }, [bulkChecking, loading])
 
   const checkOne = async (id: string) => {
     setChecking(id)
@@ -80,16 +108,6 @@ export default function HealthPage() {
     }
   }
 
-  const checkAll = async () => {
-    setBulkChecking(true)
-    try {
-      await fetch('/api/links/health', { method: 'PATCH' })
-      await load()
-    } finally {
-      setBulkChecking(false)
-    }
-  }
-
   const counts = {
     ok: links.filter(l => l.healthStatus === 'ok').length,
     error: links.filter(l => l.healthStatus === 'error').length,
@@ -98,95 +116,88 @@ export default function HealthPage() {
   }
 
   return (
-    <>
-      <div className="page-content">
-        {/* Summary cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-          {[
-            { label: 'Online', count: counts.ok, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-            { label: 'Com erro', count: counts.error, color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
-            { label: 'Timeout', count: counts.timeout, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-            { label: 'Não verificado', count: counts.unknown, color: 'var(--text-tertiary)', bg: 'var(--bg-secondary)' },
-          ].map(s => (
-            <div key={s.label} className="card" style={{ padding: '16px 20px', border: `1px solid ${s.bg}`, background: s.bg }}>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: s.color }}>{s.count}</div>
-              <div style={{ fontSize: '12px', color: s.color, marginTop: '2px', fontWeight: 500 }}>{s.label}</div>
-            </div>
-          ))}
+    <div className="page-content">
+      {/* KPI Section */}
+      <div className="health-grid">
+        <div className="health-kpi-card health-kpi-online">
+          <div className="health-kpi-value">{counts.ok}</div>
+          <div className="health-kpi-label">Online</div>
         </div>
-
-        {/* Links list */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)', fontSize: '14px' }}>Carregando...</div>
-        ) : links.length === 0 ? (
-          <div className="card" style={{ padding: '48px', textAlign: 'center' }}>
-            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '6px' }}>Nenhum link para monitorar</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Crie links para começar a monitorar seus destinos.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {links.map(link => {
-              const s = getStatus(link.healthStatus)
-              return (
-                <div key={link.id} className="card" style={{ padding: '14px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {/* Status dot */}
-                    <div style={{
-                      width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                      background: s.dot,
-                      boxShadow: link.healthStatus === 'ok'
-                        ? '0 0 0 3px rgba(34,197,94,0.15)'
-                        : link.healthStatus === 'error'
-                        ? '0 0 0 3px rgba(239,68,68,0.15)'
-                        : undefined,
-                    }} />
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {link.title || link.shortCode}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px', maxWidth: '320px' }}>
-                        {link.originalUrl}
-                      </div>
-                    </div>
-
-                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 500, color: s.color }}>{s.label}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '1px' }}>
-                        {timeAgo(link.lastHealthCheck)}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => checkOne(link.id)}
-                      disabled={checking === link.id}
-                      style={{
-                        flexShrink: 0, width: '32px', height: '32px', borderRadius: '8px',
-                        border: '1px solid var(--border-secondary)', background: 'transparent',
-                        cursor: checking === link.id ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'var(--text-tertiary)',
-                      }}
-                      title="Verificar agora"
-                    >
-                      <svg
-                        width="13" height="13" viewBox="0 0 24 24"
-                        stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"
-                        style={{ animation: checking === link.id ? 'spin 1s linear infinite' : 'none' }}
-                      >
-                        <polyline points="23 4 23 10 17 10" />
-                        <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <div className="health-kpi-card health-kpi-error">
+          <div className="health-kpi-value">{counts.error}</div>
+          <div className="health-kpi-label">Erros</div>
+        </div>
+        <div className="health-kpi-card health-kpi-warning">
+          <div className="health-kpi-value">{counts.timeout}</div>
+          <div className="health-kpi-label">Timeout</div>
+        </div>
+        <div className="health-kpi-card">
+          <div className="health-kpi-value" style={{ color: 'var(--text-tertiary)' }}>{counts.unknown}</div>
+          <div className="health-kpi-label">Pendentes</div>
+        </div>
       </div>
 
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-    </>
+      {/* Main List */}
+      <div className="health-list">
+        {loading ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="profile-spinner">
+              <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+            </svg>
+          </div>
+        ) : links.length === 0 ? (
+          <div className="ws-empty" style={{ maxWidth: '800px', width: '100%' }}>
+            <div className="ws-empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <h3 className="ws-empty-title">Tudo limpo por aqui</h3>
+            <p className="ws-empty-desc">
+              Você ainda não tem links para monitorar. Assim que criar seus links, eles aparecerão aqui para verificação automática de saúde.
+            </p>
+          </div>
+        ) : (
+          links.map(link => {
+            const s = getStatus(link.healthStatus)
+            const isChecking = checking === link.id
+            
+            return (
+              <div key={link.id} className="health-item">
+                <div className={`health-status-dot ${s.class}`} />
+                
+                <div className="health-item-info">
+                  <div className="health-item-title">{link.title || link.shortCode}</div>
+                  <div className="health-item-url">{link.originalUrl}</div>
+                </div>
+
+                <div className="health-item-meta">
+                  <div className="health-status-text" style={{ color: s.color }}>{s.label}</div>
+                  <div className="health-last-check">{timeAgo(link.lastHealthCheck)}</div>
+                </div>
+
+                <button
+                  className="health-btn-refresh"
+                  onClick={(e) => { e.preventDefault(); checkOne(link.id); }}
+                  disabled={isChecking || bulkChecking}
+                  title="Verificar agora"
+                >
+                  {isChecking ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="profile-spinner">
+                      <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </div>
   )
 }

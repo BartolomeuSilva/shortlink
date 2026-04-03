@@ -29,6 +29,11 @@ export const metadata: Metadata = {
   description:
     'Encurte URLs, rastreie cliques e analise seu tráfego com o 123bit.app.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  icons: {
+    icon: '/icon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/icon.ico',
+  },
 }
 
 export const viewport = {
@@ -62,6 +67,7 @@ export default function RootLayout({
       <body
         className="font-sans antialiased"
         style={{ fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif' }}
+        suppressHydrationWarning
       >
         <Providers>{children}</Providers>
       </body>

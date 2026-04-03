@@ -264,7 +264,7 @@ export function ProfileModal({ user, onClose, onProfileUpdate }: ProfileModalPro
           {/* Logout */}
           <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-primary)', paddingTop: '16px' }}>
             <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
+              onClick={() => signOut({ callbackUrl: '/' })}
               className="btn btn-ghost"
               style={{ width: '100%', justifyContent: 'center', color: 'var(--color-error)' }}
             >

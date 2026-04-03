@@ -129,9 +129,8 @@ export default function LandingPage() {
       <div className="landing">
         {/* NAV */}
         <nav className={`nav ${scrolled ? 'scrolled' : ''}`}>
-          <Link href="/" className="nav-logo">
-            <div className="nav-logo-icon" />
-            123<span>bit</span>.app
+          <Link href="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/Logo-123bit.png" alt="123bit Logo" style={{ height: '32px', width: 'auto' }} />
           </Link>
           <div className="nav-links">
             <a className="nav-link" href="#features">Funcionalidades</a>
@@ -422,7 +421,9 @@ export default function LandingPage() {
 
         {/* FOOTER */}
         <footer>
-          <div className="footer-logo">123<span>bit</span>.app</div>
+          <div className="footer-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/Logo-123bit.png" alt="123bit Logo" style={{ height: '24px', width: 'auto', opacity: 0.8 }} />
+          </div>
           <div className="footer-links">
             <a className="footer-link" href="#">Termos de uso</a>
             <a className="footer-link" href="#">Privacidade</a>

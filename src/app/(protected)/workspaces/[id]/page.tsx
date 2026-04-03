@@ -20,8 +20,18 @@ interface Workspace {
 }
 
 const ROLES = ['ADMIN', 'EDITOR', 'VIEWER']
-const ROLE_LABELS: Record<string, string> = { OWNER: 'Owner', ADMIN: 'Admin', EDITOR: 'Editor', VIEWER: 'Viewer' }
-const ROLE_COLORS: Record<string, string> = { OWNER: '#8b5cf6', ADMIN: '#3b82f6', EDITOR: '#22c55e', VIEWER: 'var(--text-tertiary)' }
+const ROLE_LABELS: Record<string, string> = { 
+  OWNER: 'Proprietário', 
+  ADMIN: 'Administrador', 
+  EDITOR: 'Editor', 
+  VIEWER: 'Visualizador' 
+}
+const ROLE_COLORS: Record<string, string> = { 
+  OWNER: '#8b5cf6', 
+  ADMIN: '#3b82f6', 
+  EDITOR: '#22c55e', 
+  VIEWER: 'var(--text-tertiary)' 
+}
 
 export default function WorkspaceDetailPage({ params }: { params: { id: string } }) {
   const { id } = params
@@ -36,27 +46,35 @@ export default function WorkspaceDetailPage({ params }: { params: { id: string }
   const [removingId, setRemovingId] = useState<string | null>(null)
   const topbar = useTopbar()
 
+  const load = async () => {
+    try {
+      const res = await fetch(`/api/workspaces/${id}`)
+      const data = await res.json()
+      setWs(data.workspace)
+      setCurrentRole(data.currentRole)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [id])
+
   useEffect(() => {
     if (ws) {
       topbar.setTitle(ws.name)
-      topbar.setSubtitle(`/${ws.slug}`)
+      topbar.setSubtitle(`shortlink.com.br/${ws.slug}`)
       topbar.setActions(
-        <Link href="/workspaces" className="btn btn-ghost" style={{ fontSize: '13px' }}>
-          ← Workspaces
+        <Link href="/workspaces" className="btn btn-ghost" style={{ gap: '8px' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Voltar
         </Link>
       )
     }
   }, [ws])
-
-  const load = async () => {
-    const res = await fetch(`/api/workspaces/${id}`)
-    const data = await res.json()
-    setWs(data.workspace)
-    setCurrentRole(data.currentRole)
-    setLoading(false)
-  }
-
-  useEffect(() => { load() }, [id])
 
   const handleInvite = async () => {
     if (!inviteEmail) return
@@ -70,108 +88,151 @@ export default function WorkspaceDetailPage({ params }: { params: { id: string }
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       })
       const data = await res.json()
-      if (!res.ok) { setInviteError(data.error || 'Erro'); return }
+      if (!res.ok) { 
+        setInviteError(data.error || 'Erro ao convidar membro'); 
+        return 
+      }
       setWs(prev => prev ? { ...prev, members: [...prev.members, data.member] } : prev)
-      setInviteSuccess(`${inviteEmail} adicionado com sucesso!`)
+      setInviteSuccess(`${inviteEmail} foi convidado!`)
       setInviteEmail('')
-      setTimeout(() => setInviteSuccess(''), 4000)
+      setTimeout(() => setInviteSuccess(''), 5000)
     } finally {
       setInviting(false)
     }
   }
 
   const handleRemove = async (userId: string) => {
+    if (!confirm('Tem certeza que deseja remover este membro?')) return
     setRemovingId(userId)
-    await fetch(`/api/workspaces/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'remove_member', userId }),
-    })
-    setWs(prev => prev ? { ...prev, members: prev.members.filter(m => m.user.id !== userId) } : prev)
-    setRemovingId(null)
+    try {
+      await fetch(`/api/workspaces/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remove_member', userId }),
+      })
+      setWs(prev => prev ? { ...prev, members: prev.members.filter(m => m.user.id !== userId) } : prev)
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   const canManage = ['OWNER', 'ADMIN'].includes(currentRole)
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Carregando...</div>
-  if (!ws) return <div style={{ padding: '40px', color: '#ef4444' }}>Workspace não encontrado.</div>
+  if (loading) return (
+    <div className="page-content">
+      <div className="profile-spinner" style={{ width: '32px', height: '32px', border: '3px solid var(--border-secondary)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
+    </div>
+  )
+  
+  if (!ws) return (
+    <div className="page-content">
+      <div className="card" style={{ padding: '40px', textAlign: 'center', borderColor: '#ef4444' }}>
+        <h3 style={{ color: '#ef4444' }}>Workspace não encontrado</h3>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>O workspace solicitado não existe ou você não tem permissão para acessá-lo.</p>
+        <Link href="/workspaces" className="btn btn-primary" style={{ marginTop: '20px' }}>Voltar para Workspaces</Link>
+      </div>
+    </div>
+  )
 
   return (
-    <>
-      <div className="page-content" style={{ maxWidth: '680px' }}>
-        {/* Invite form */}
+    <div className="page-content">
+      <div className="ws-container" style={{ maxWidth: '720px' }}>
+        
+        {/* Invite Section */}
         {canManage && (
-          <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '14px' }}>Convidar membro</div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                placeholder="email@exemplo.com"
-                style={{ flex: 1, height: '40px', fontFamily: 'inherit', fontSize: '13px', color: 'var(--text-primary)', background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)', borderRadius: '8px', padding: '0 12px', outline: 'none', boxSizing: 'border-box' }}
-              />
+          <div className="card" style={{ padding: '24px', marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
+              Convidar Membros
+            </h3>
+            <div className="invite-form">
+              <div className="invite-input-wrap">
+                <input
+                  type="email"
+                  className="input-field"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
               <select
+                className="invite-select"
                 value={inviteRole}
                 onChange={e => setInviteRole(e.target.value)}
-                style={{ height: '40px', fontSize: '13px', color: 'var(--text-primary)', background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)', borderRadius: '8px', padding: '0 10px', outline: 'none' }}
               >
-                {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                {ROLES.map(r => (
+                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                ))}
               </select>
-              <button className="btn btn-primary" onClick={handleInvite} disabled={inviting || !inviteEmail} style={{ whiteSpace: 'nowrap' }}>
-                {inviting ? 'Convidando...' : 'Convidar'}
+              <button 
+                className="btn btn-primary" 
+                onClick={handleInvite} 
+                disabled={inviting || !inviteEmail}
+                style={{ height: '48px', padding: '0 24px' }}
+              >
+                {inviting ? 'Enviando...' : 'Convidar'}
               </button>
             </div>
-            {inviteError && <div style={{ fontSize: '13px', color: '#ef4444', marginTop: '8px' }}>{inviteError}</div>}
-            {inviteSuccess && <div style={{ fontSize: '13px', color: '#22c55e', marginTop: '8px' }}>{inviteSuccess}</div>}
+            
+            {inviteError && (
+              <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {inviteError}
+              </div>
+            )}
+            {inviteSuccess && (
+              <div style={{ color: '#22c55e', fontSize: '13px', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                {inviteSuccess}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Members list */}
-        <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
-          Membros ({ws.members.length})
+        {/* Member List */}
+        <div className="member-list-header">
+          Equipe do Workspace ({ws.members.length})
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="member-list">
           {ws.members.map(m => (
-            <div key={m.id} className="card" style={{ padding: '14px 20px' }}>
+            <div key={m.id} className="member-item">
+              <div className="member-avatar">
+                {m.user.image ? (
+                  <img src={m.user.image} alt={m.user.name || ''} />
+                ) : (
+                  (m.user.name || m.user.email)[0].toUpperCase()
+                )}
+              </div>
+
+              <div className="member-info">
+                <div className="member-name">{m.user.name || 'Convidado'}</div>
+                <div className="member-email">{m.user.email}</div>
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                  background: m.user.image ? 'transparent' : 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
-                  border: '2px solid var(--border-primary)', overflow: 'hidden',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '14px', fontWeight: 600, color: 'white',
-                }}>
-                  {m.user.image
-                    ? <img src={m.user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : (m.user.name || m.user.email)[0].toUpperCase()
-                  }
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                    {m.user.name || m.user.email}
-                  </div>
-                  {m.user.name && <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '1px' }}>{m.user.email}</div>}
-                </div>
-
-                <span style={{
-                  fontSize: '11px', fontWeight: 500, padding: '3px 10px', borderRadius: '99px',
-                  background: `${ROLE_COLORS[m.role]}14`, color: ROLE_COLORS[m.role],
-                  border: `0.5px solid ${ROLE_COLORS[m.role]}30`,
+                <span className="ws-role-badge" style={{ 
+                  background: `${ROLE_COLORS[m.role]}15`, 
+                  color: ROLE_COLORS[m.role],
+                  borderColor: `${ROLE_COLORS[m.role]}30`
                 }}>
                   {ROLE_LABELS[m.role]}
                 </span>
 
                 {canManage && m.role !== 'OWNER' && (
                   <button
+                    className="health-btn-refresh"
                     onClick={() => handleRemove(m.user.id)}
                     disabled={removingId === m.user.id}
-                    style={{ width: '30px', height: '30px', borderRadius: '8px', border: '1px solid var(--border-secondary)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', flexShrink: 0 }}
                     title="Remover membro"
+                    style={{ color: '#ef4444', borderColor: '#ef444420' }}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    {removingId === m.user.id ? (
+                      <div className="profile-spinner" style={{ width: '14px', height: '14px', border: '2px solid #ef444430', borderTopColor: '#ef4444' }} />
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    )}
                   </button>
                 )}
               </div>
@@ -179,10 +240,24 @@ export default function WorkspaceDetailPage({ params }: { params: { id: string }
           ))}
         </div>
 
-        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '20px', fontWeight: 300 }}>
-          <strong>Owner:</strong> controle total · <strong>Admin:</strong> gerencia membros · <strong>Editor:</strong> cria e edita links · <strong>Viewer:</strong> visualização apenas
-        </p>
+        {/* Roles Guide */}
+        <div className="roles-legend">
+          <span className="roles-legend-title">Guia de Permissões</span>
+          <div className="roles-legend-item">
+            <strong>Proprietário:</strong> Controle total e faturamento do workspace.
+          </div>
+          <div className="roles-legend-item">
+            <strong>Administrador:</strong> Pode gerenciar membros e editar todos os links.
+          </div>
+          <div className="roles-legend-item">
+            <strong>Editor:</strong> Pode criar, editar e excluir seus próprios links.
+          </div>
+          <div className="roles-legend-item">
+            <strong>Visualizador:</strong> Pode apenas ver a lista e o analytics dos links.
+          </div>
+        </div>
+
       </div>
-    </>
+    </div>
   )
 }

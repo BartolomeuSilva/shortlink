@@ -16,76 +16,70 @@ export default async function SettingsPage() {
   if (!user || error) redirect('/login')
 
   const memberSince = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(user.createdAt))
-
   const linksCount = user.links?.[0]?.count || 0
 
-  return (
-    <>
-      <PageHeader title="Configurações" subtitle="Gerencie sua conta e preferências" />
+  const profileRows = [
+    { label: 'Nome Completo', value: user.name || 'Não informado' },
+    { label: 'Email Principal', value: user.email },
+    { label: 'Plano Atual', value: user.plan },
+    { label: 'Total de Links', value: `${linksCount} links criados` },
+    { label: 'Membro desde', value: memberSince },
+  ]
 
-      <div className="page-content" style={{ maxWidth: '640px' }}>
-        {/* Profile card */}
-        <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '50%', flexShrink: 0,
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15))',
-              border: '2px solid var(--border-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '22px', fontWeight: 500, color: '#8b5cf6', overflow: 'hidden',
-            }}>
-              {user.image
-                ? <img src={user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                : (user.name || user.email || '?').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-              }
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
-                {user.name || 'Sem nome'}
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{user.email}</div>
-              <div style={{ marginTop: '8px' }}>
-                <span style={{
-                  fontSize: '11px', fontWeight: 500, padding: '3px 10px', borderRadius: '99px',
-                  background: 'rgba(139,92,246,0.1)', color: '#8b5cf6',
-                  border: '0.5px solid rgba(139,92,246,0.2)',
-                }}>
-                  {user.plan}
-                </span>
-              </div>
-            </div>
+  return (
+    <div className="page-content">
+      <PageHeader title="Configurações" subtitle="Gerencie sua conta e preferências de perfil" />
+
+      <div className="settings-container">
+        
+        {/* Profile Card */}
+        <div className="settings-profile-card">
+          <div className="settings-avatar-big">
+            {user.image ? (
+              <img src={user.image} alt={user.name || ''} />
+            ) : (
+              (user.name || user.email || '?').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+            )}
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-primary mb-1">
+              {user.name || 'Usuário'}
+            </h2>
+            <p className="text-sm text-tertiary mb-3">
+              {user.email}
+            </p>
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20 uppercase tracking-wider">
+              {user.plan}
+            </span>
           </div>
         </div>
 
-        {/* Account info */}
-        <div style={{ marginBottom: '8px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
-            Informações da conta
-          </div>
-          <div className="card" style={{ padding: '0' }}>
-            {[
-              { label: 'Nome', value: user.name || '—' },
-              { label: 'Email', value: user.email },
-              { label: 'Plano', value: user.plan },
-              { label: 'Links criados', value: String(linksCount) },
-              { label: 'Membro desde', value: memberSince },
-            ].map((row, i, arr) => (
-              <div key={row.label} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 20px',
-                borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
-              }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{row.label}</span>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{row.value}</span>
+        {/* Account Information */}
+        <div className="mt-8">
+          <h3 className="section-title mb-4">Detalhes da Conta</h3>
+          <div className="settings-info-list">
+            {profileRows.map((row) => (
+              <div key={row.label} className="settings-info-row">
+                <span className="settings-info-label">{row.label}</span>
+                <span className="settings-info-value">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '12px', fontWeight: 300 }}>
-          Para alterar nome, foto ou senha, clique no seu perfil na barra lateral.
-        </p>
+        {/* Hint Box */}
+        <div className="mt-8 p-6 rounded-2xl bg-primary/5 border border-primary/10 flex gap-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <p className="text-sm text-secondary leading-relaxed">
+            <strong>Dica:</strong> Para alterar suas informações pessoais como nome, foto ou senha, utilize a <strong>Modal de Perfil</strong> acessível pelo seu nome no rodapé da barra lateral.
+          </p>
+        </div>
+
       </div>
-    </>
+    </div>
   )
 }

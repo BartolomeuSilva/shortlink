@@ -109,9 +109,8 @@ export function Sidebar({ user, isOpen, collapsed, onClose, onToggleCollapse, on
     <aside className={`sidebar ${isOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
       {/* LOGO + COLLAPSE TOGGLE */}
       <div className="sidebar-logo-row">
-        <Link href="/dashboard" className="sidebar-logo" onClick={onClose}>
-          <div className="sidebar-logo-icon">1</div>
-          <div className="sidebar-logo-text">123<span>bit</span></div>
+        <Link href="/dashboard" className="sidebar-logo" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src="/Logo-123bit.png" alt="123bit Logo" style={{ height: '32px', width: 'auto', borderRadius: '4px' }} />
         </Link>
         <button
           className="sidebar-collapse-btn"

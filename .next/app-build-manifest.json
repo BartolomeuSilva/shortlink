@@ -36,26 +36,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(protected)/campaigns/page.js"
     ],
-    "/(protected)/bio-pages/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/bio-pages/page.js"
-    ],
-    "/(protected)/health/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/health/page.js"
-    ],
-    "/(protected)/bio-pages/[id]/analytics/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/bio-pages/[id]/analytics/page.js"
-    ],
-    "/(protected)/links/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/links/[id]/page.js"
-    ],
     "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

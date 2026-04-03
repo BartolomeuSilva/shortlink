@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useTopbar } from '@/components/layout/Topbar'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 interface Webhook {
   id: string
@@ -37,27 +38,26 @@ export default function WebhooksPage() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>(['link.clicked'])
   const [formError, setFormError] = useState('')
 
-  useEffect(() => {
-    topbar.setTitle('Webhooks')
-    topbar.setSubtitle('Receba notificações em tempo real para eventos dos seus links')
-    topbar.setActions(
-      <button className="btn btn-primary" onClick={() => setShowForm(v => !v)}>
-        {showForm ? 'Cancelar' : '+ Novo webhook'}
-      </button>
-    )
-  }, [showForm])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     const res = await fetch('/api/webhooks')
     const data = await res.json()
     setWebhooks(data.webhooks || [])
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    topbar.setTitle('Webhooks')
+    topbar.setSubtitle('Gerencie notificações em tempo real')
+    topbar.setActions(null)
+  }, [topbar])
 
   const handleCreate = async () => {
-    if (!name || !url || selectedEvents.length === 0) return
+    if (!name || !url || selectedEvents.length === 0) {
+      setFormError('Por favor, preencha o nome, URL e selecione ao menos um evento.')
+      return
+    }
     setCreating(true)
     setFormError('')
     try {
@@ -72,6 +72,8 @@ export default function WebhooksPage() {
       setShowForm(false)
       setName(''); setUrl(''); setSecret('')
       setSelectedEvents(['link.clicked'])
+    } catch {
+      setFormError('Erro ao conectar com o servidor.')
     } finally {
       setCreating(false)
     }
@@ -82,7 +84,7 @@ export default function WebhooksPage() {
     try {
       const res = await fetch(`/api/webhooks/${id}`, { method: 'POST' })
       const data = await res.json()
-      setTestResult(prev => ({ ...prev, [id]: data.success ? `OK (${data.statusCode})` : `Falhou (${data.statusCode || 'sem resposta'})` }))
+      setTestResult(prev => ({ ...prev, [id]: data.success ? `✓ OK (${data.statusCode})` : `✗ Erro (${data.statusCode || 'Timeout'})` }))
       setTimeout(() => setTestResult(prev => { const n = { ...prev }; delete n[id]; return n }), 5000)
     } finally {
       setTestingId(null)
@@ -99,140 +101,282 @@ export default function WebhooksPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este webhook?')) return
     setDeletingId(id)
     await fetch(`/api/webhooks/${id}`, { method: 'DELETE' })
     setWebhooks(prev => prev.filter(w => w.id !== id))
     setDeletingId(null)
   }
 
-  const inp: React.CSSProperties = {
-    width: '100%', height: '40px', fontFamily: 'inherit', fontSize: '13px',
-    color: 'var(--text-primary)', background: 'var(--bg-secondary)',
-    border: '1px solid var(--border-secondary)', borderRadius: '8px',
-    padding: '0 12px', outline: 'none', boxSizing: 'border-box',
-  }
-  const lbl: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }
+  if (loading) return (
+    <div className="page-content">
+      <div className="profile-spinner" style={{ width: '32px', height: '32px', border: '3px solid var(--border-secondary)', borderTopColor: 'var(--primary)', borderRadius: '50%' }} />
+    </div>
+  )
 
   return (
-    <>
-      <div className="page-content" style={{ maxWidth: '680px' }}>
-        {/* Create form */}
-        {showForm && (
-          <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Novo webhook</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={lbl}>Nome</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Notificação Slack" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>URL de destino</label>
-                <input type="url" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://hooks.slack.com/..." style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Secret (opcional)</label>
-                <input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Enviado no header X-Webhook-Secret" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Eventos</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {ALL_EVENTS.map(ev => (
-                    <label key={ev} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedEvents.includes(ev)}
-                        onChange={e => setSelectedEvents(prev => e.target.checked ? [...prev, ev] : prev.filter(x => x !== ev))}
-                      />
-                      <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{EVENT_LABELS[ev]}</span>
-                      <code style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-mono, monospace)' }}>{ev}</code>
-                    </label>
-                  ))}
+    <div className="page-content">
+      <PageHeader title="Webhooks" subtitle="Receba notificações em tempo real para eventos dos seus links" />
+
+      <div className="settings-container">
+        
+        {/* Help Hint */}
+        <div className="settings-hint">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <div className="settings-hint-text">
+            Use Webhooks para integrar com <strong>Zapier</strong>, <strong>n8n</strong>, ou qualquer servidor personalizado. Enviamos um payload JSON sempre que o evento ocorrer.
+          </div>
+        </div>
+
+        {/* Action Card: Create Webhook */}
+        <div className={`settings-action-card ${showForm ? 'expanded' : ''}`}>
+          <div className="settings-action-header" onClick={() => !showForm && setShowForm(true)} style={{ cursor: showForm ? 'default' : 'pointer' }}>
+            <div className="settings-action-icon" style={{ background: 'var(--primary-lighter)', color: 'var(--primary)' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </div>
+            <div className="settings-action-info" style={{ flex: 1 }}>
+              <h3 className="settings-action-title">Configurar Novo Webhook</h3>
+              <p className="settings-action-description">Crie integrações em tempo real para seus eventos.</p>
+            </div>
+            {!showForm && (
+              <button className="btn btn-primary" style={{ height: '36px', fontSize: '13px' }}>
+                Começar
+              </button>
+            )}
+          </div>
+
+          {showForm && (
+            <div style={{ marginTop: '24px', animation: 'slideDown 0.3s ease-out' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  <div>
+                    <label className="settings-list-label">Nome de Identificação</label>
+                    <input 
+                      className="settings-input-modern" 
+                      value={name} 
+                      onChange={e => setName(e.target.value)} 
+                      placeholder="Ex: Notificação Slack Vendas" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="settings-list-label">URL de Destino (Endpoint)</label>
+                    <input 
+                      className="settings-input-modern" 
+                      type="url" 
+                      value={url} 
+                      onChange={e => setUrl(e.target.value)} 
+                      placeholder="https://sua-api.com/webhook" 
+                      style={{ fontFamily: 'var(--font-dm-mono)' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="settings-list-label">Secret de Verificação (Header X-Webhook-Secret)</label>
+                  <input 
+                    className="settings-input-modern" 
+                    value={secret} 
+                    onChange={e => setSecret(e.target.value)} 
+                    placeholder="Deixe em branco para ignorar" 
+                  />
+                  <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '8px' }}>
+                    Recomendado para validar que a requisição partiu originalmente dos nossos servidores.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="settings-list-label">Eventos a Notificar</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '8px' }}>
+                    {ALL_EVENTS.map(ev => (
+                      <label key={ev} className={`event-checkbox-card ${selectedEvents.includes(ev) ? 'active' : ''}`} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
+                        padding: '12px 16px', borderRadius: '12px', border: '1.5px solid var(--border-secondary)',
+                        transition: 'all 0.2s ease',
+                        background: selectedEvents.includes(ev) ? 'var(--primary-lighter)' : 'transparent',
+                        borderColor: selectedEvents.includes(ev) ? 'var(--primary)' : 'var(--border-secondary)',
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedEvents.includes(ev)}
+                          style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                          onChange={e => setSelectedEvents(prev => e.target.checked ? [...prev, ev] : prev.filter(x => x !== ev))}
+                        />
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{EVENT_LABELS[ev]}</div>
+                          <code style={{ fontSize: '10px', color: 'var(--text-tertiary)', opacity: 0.7 }}>{ev}</code>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {formError && (
+                  <div className="settings-error-alert">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    {formError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleCreate} 
+                    disabled={creating}
+                    style={{ flex: 1, height: '48px' }}
+                  >
+                    {creating ? 'Salvando...' : 'Salvar Webhook'}
+                  </button>
+                  <button 
+                    className="btn btn-ghost" 
+                    onClick={() => setShowForm(false)}
+                    style={{ height: '48px', padding: '0 24px', border: '1.5px solid var(--border-secondary)' }}
+                  >
+                    Cancelar
+                  </button>
                 </div>
               </div>
-              {formError && <div style={{ fontSize: '13px', color: '#ef4444' }}>{formError}</div>}
-              <button className="btn btn-primary" onClick={handleCreate} disabled={creating}>
-                {creating ? 'Criando...' : 'Criar webhook'}
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* List */}
-        {webhooks.length === 0 && !loading ? (
-          <div className="card" style={{ padding: '48px', textAlign: 'center' }}>
-            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '6px' }}>Nenhum webhook ainda</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Crie um webhook para integrar com Slack, Zapier, n8n e muito mais.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {webhooks.map(wh => {
+        <div style={{ marginTop: '40px', marginBottom: '16px' }}>
+          <h2 className="settings-section-title">Webhooks Configurados</h2>
+        </div>
+
+        {/* Webhooks List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {webhooks.length === 0 ? (
+            <div className="glass-card" style={{ padding: '60px 40px', textAlign: 'center', borderStyle: 'dashed' }}>
+              <div className="security-avatar-box" style={{ margin: '0 auto 20px', opacity: 0.5 }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Nenhum webhook ativo</div>
+              <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', maxWidth: '300px', margin: '0 auto' }}>
+                Comece integrando seus links com outras ferramentas em tempo real.
+              </p>
+            </div>
+          ) : (
+            webhooks.map(wh => {
               const lastDelivery = wh.deliveries ? wh.deliveries[0] : null
+              const isFailing = lastDelivery && !lastDelivery.success
+
               return (
-                <div key={wh.id} className="card" style={{ padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                    {/* Status dot */}
-                    <div style={{
-                      width: '8px', height: '8px', borderRadius: '50%', marginTop: '5px', flexShrink: 0,
-                      background: !wh.active ? 'var(--border-secondary)' : lastDelivery?.success === false ? '#ef4444' : '#22c55e',
-                    }} />
+                <div key={wh.id} className="glass-card" style={{ padding: '24px', position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
+                    {/* Status Avatar */}
+                    <div className="security-avatar-box" style={{ 
+                      background: !wh.active ? 'var(--bg-secondary)' : isFailing ? 'var(--error-lighter)' : 'var(--success-lighter)',
+                      color: !wh.active ? 'var(--text-tertiary)' : isFailing ? 'var(--error)' : 'var(--success)',
+                      flexShrink: 0
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        {isFailing ? (
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
+                        ) : (
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                        )}
+                      </svg>
+                    </div>
+
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{wh.name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wh.url}</div>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{wh.name}</div>
+                        {!wh.active && <span className="settings-badge-disabled">Pausado</span>}
+                        {wh.active && !isFailing && <span className="settings-badge-active" style={{ background: 'var(--success-lighter)', color: 'var(--success)', border: 'none' }}>Ativo</span>}
+                        {isFailing && <span className="settings-badge-active" style={{ background: 'var(--error-lighter)', color: 'var(--error)', border: 'none' }}>Erro</span>}
+                      </div>
+                      
+                      <div style={{ 
+                        fontSize: '13px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap', fontFamily: 'var(--font-dm-mono)', marginBottom: '12px' 
+                      }}>
+                        {wh.url}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
                         {wh.events.map(ev => (
-                          <span key={ev} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '0.5px solid rgba(139,92,246,0.2)' }}>
+                          <span key={ev} className="settings-badge-active" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-secondary)', padding: '2px 10px', fontSize: '10px' }}>
                             {EVENT_LABELS[ev] || ev}
                           </span>
                         ))}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>
-                        {wh._count.deliveries} entregas
-                        {lastDelivery && ` · última ${lastDelivery.success ? '✓' : '✗'} ${new Date(lastDelivery.deliveredAt).toLocaleDateString('pt-BR')}`}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{wh._count.deliveries}</span> entregas
+                        </div>
+                        {lastDelivery && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Última: <span style={{ color: lastDelivery.success ? 'var(--success)' : 'var(--error)', fontWeight: 600 }}>
+                              {lastDelivery.success ? 'OK' : `Falha (${lastDelivery.statusCode || 'N/A'})`}
+                            </span>
+                            <span style={{ opacity: 0.3 }}>|</span>
+                            <span>{new Date(lastDelivery.deliveredAt).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        )}
                       </div>
+
                       {testResult[wh.id] && (
-                        <div style={{ fontSize: '12px', marginTop: '6px', color: testResult[wh.id].startsWith('OK') ? '#22c55e' : '#ef4444', fontWeight: 500 }}>
-                          Teste: {testResult[wh.id]}
+                        <div style={{ 
+                          fontSize: '12px', marginTop: '16px', padding: '10px 14px', borderRadius: '10px',
+                          background: testResult[wh.id].includes('OK') ? 'var(--success-lighter)' : 'var(--error-lighter)',
+                          color: testResult[wh.id].includes('OK') ? 'var(--success)' : 'var(--error)',
+                          fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px',
+                          animation: 'fadeIn 0.3s ease-out'
+                        }}>
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+                          Resultado do Teste: {testResult[wh.id]}
                         </div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexDirection: 'column', alignItems: 'flex-end' }}>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleTest(wh.id)}
-                          disabled={testingId === wh.id}
-                          className="btn btn-ghost"
-                          style={{ fontSize: '12px', padding: '5px 12px', height: '30px' }}
-                        >
-                          {testingId === wh.id ? 'Testando...' : 'Testar'}
-                        </button>
-                        <button
-                          onClick={() => handleToggle(wh.id, wh.active)}
-                          className="btn btn-ghost"
-                          style={{ fontSize: '12px', padding: '5px 12px', height: '30px' }}
-                        >
-                          {wh.active ? 'Pausar' : 'Ativar'}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(wh.id)}
-                          disabled={deletingId === wh.id}
-                          style={{
-                            width: '30px', height: '30px', borderRadius: '8px', border: '1px solid var(--border-secondary)',
-                            background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)',
-                          }}
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6M9 6V4h6v2" />
-                          </svg>
-                        </button>
-                      </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      <button
+                        onClick={() => handleTest(wh.id)}
+                        disabled={testingId === wh.id}
+                        className="btn btn-ghost"
+                        style={{ height: '36px', fontSize: '12px', border: '1.5px solid var(--border-secondary)', padding: '0 16px' }}
+                      >
+                        {testingId === wh.id ? '...' : 'Testar'}
+                      </button>
+                      <button
+                        onClick={() => handleToggle(wh.id, wh.active)}
+                        className="btn btn-ghost"
+                        style={{ height: '36px', fontSize: '12px', border: '1.5px solid var(--border-secondary)', padding: '0 16px' }}
+                      >
+                        {wh.active ? 'Pausar' : 'Ativar'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(wh.id)}
+                        disabled={deletingId === wh.id}
+                        className="btn btn-ghost"
+                        style={{ height: '36px', width: '36px', padding: 0, color: 'var(--error)', border: '1.5px solid var(--border-secondary)' }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
               )
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </div>
-    </>
+    </div>
   )
 }

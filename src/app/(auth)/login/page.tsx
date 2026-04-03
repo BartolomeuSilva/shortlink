@@ -56,8 +56,7 @@ export default function LoginPage() {
       <div className="lp-left">
         <div className="lp-header">
           <Link href="/" className="lp-logo">
-            <div className="lp-logo-icon" />
-            123<span>bit</span>.app
+            <img src="/Logo-123bit.png" alt="123bit Logo" style={{ height: '32px', width: 'auto' }} />
           </Link>
           <ThemeToggle />
         </div>
@@ -93,8 +92,7 @@ export default function LoginPage() {
           {/* Mobile-only header with logo */}
           <div className="lp-mobile-header">
             <Link href="/" className="lp-logo">
-              <div className="lp-logo-icon" />
-              123<span>bit</span>.app
+              <img src="/Logo-123bit.png" alt="123bit Logo" style={{ height: '32px', width: 'auto' }} />
             </Link>
             <ThemeToggle />
           </div>
