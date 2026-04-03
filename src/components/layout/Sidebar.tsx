@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ProfileModal } from '@/components/profile/ProfileModal'
+import { useWorkspace } from '@/components/theme/WorkspaceContext'
 
 interface SidebarUser {
   name?: string | null
@@ -94,6 +95,8 @@ const settingsItems = [
 export function Sidebar({ user, isOpen, collapsed, onClose, onToggleCollapse, onProfileUpdate }: SidebarProps) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
+  const { activeWorkspace, setActiveWorkspace, workspaces } = useWorkspace()
+  const [showWorkspaceSelector, setShowWorkspaceSelector] = useState(false)
 
   const isActive = (href: string) => pathname === href
 
@@ -124,6 +127,92 @@ export function Sidebar({ user, isOpen, collapsed, onClose, onToggleCollapse, on
           </svg>
         </button>
       </div>
+
+      {/* WORKSPACE SELECTOR */}
+      {!collapsed && (
+        <div className="sidebar-workspace-selector" style={{ padding: '0 16px 16px', position: 'relative' }}>
+          <button 
+            onClick={() => setShowWorkspaceSelector(!showWorkspaceSelector)}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: '10px', 
+              border: '1px solid var(--border-primary)', background: 'var(--bg-primary)',
+              display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', textAlign: 'left'
+            }}
+          >
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '6px',
+              background: activeWorkspace ? 'linear-gradient(135deg, #8b5cf6, #3b82f6)' : '#EEEDE9',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '13px', fontWeight: 700, color: activeWorkspace ? 'white' : 'var(--text-secondary)'
+            }}>
+              {activeWorkspace ? activeWorkspace.name[0].toUpperCase() : 'P'}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {activeWorkspace ? activeWorkspace.name : 'Espaço Pessoal'}
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '1px' }}>Trocar espaço</div>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" style={{ opacity: 0.5 }}>
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+
+          {showWorkspaceSelector && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% - 12px)', left: '16px', right: '16px',
+              background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-primary)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 100, padding: '6px',
+              maxHeight: '280px', overflowY: 'auto'
+            }}>
+              <div style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seus Espaços</div>
+              
+              <button 
+                onClick={() => { setActiveWorkspace(null); setShowWorkspaceSelector(false); }}
+                style={{
+                  width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
+                  background: !activeWorkspace ? 'rgba(139,92,246,0.08)' : 'transparent',
+                  display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', textAlign: 'left',
+                  marginTop: '4px'
+                }}
+              >
+                <div style={{ width: '24px', height: '24px', borderRadius: '5px', background: '#EEEDE9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>P</div>
+                <span style={{ fontSize: '13px', color: !activeWorkspace ? 'var(--primary)' : 'var(--text-primary)', fontWeight: !activeWorkspace ? 500 : 400 }}>Espaço Pessoal</span>
+              </button>
+
+              {workspaces.map(ws => (
+                <button 
+                  key={ws.id}
+                  onClick={() => { setActiveWorkspace(ws); setShowWorkspaceSelector(false); }}
+                  style={{
+                    width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
+                    background: activeWorkspace?.id === ws.id ? 'rgba(139,92,246,0.08)' : 'transparent',
+                    display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', textAlign: 'left'
+                  }}
+                >
+                  <div style={{ width: '24px', height: '24px', borderRadius: '5px', background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: 'white' }}>{ws.name[0].toUpperCase()}</div>
+                  <span style={{ fontSize: '13px', color: activeWorkspace?.id === ws.id ? 'var(--primary)' : 'var(--text-primary)', fontWeight: activeWorkspace?.id === ws.id ? 500 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ws.name}</span>
+                </button>
+              ))}
+
+              <div style={{ borderTop: '1px solid var(--border-primary)', margin: '6px 4px', paddingTop: '6px' }}>
+                <Link 
+                  href="/workspaces" 
+                  onClick={() => setShowWorkspaceSelector(false)}
+                  style={{
+                    width: '100%', padding: '8px 10px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', display: 'flex', alignItems: 'center', gap: '10px',
+                    cursor: 'pointer', textDecoration: 'none', color: 'var(--text-secondary)'
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  <span style={{ fontSize: '13px' }}>Novo Workspace</span>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* NAV */}
       <nav className="sidebar-nav">

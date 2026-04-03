@@ -12,6 +12,7 @@ interface CreateLinkModalProps {
 type Tab = 'basic' | 'utm' | 'og' | 'schedule' | 'rules'
 
 interface Campaign { id: string; name: string }
+interface Workspace { id: string; name: string }
 
 export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: CreateLinkModalProps) {
   const router = useRouter()
@@ -19,13 +20,18 @@ export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: Creat
   const [error, setError] = useState('')
   const [tab, setTab] = useState<Tab>('basic')
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [campaignId, setCampaignId] = useState(defaultCampaignId || '')
+  const [workspaceId, setWorkspaceId] = useState('')
 
   useEffect(() => {
-    fetch('/api/campaigns')
-      .then(r => r.json())
-      .then(d => setCampaigns(d.campaigns || []))
-      .catch(() => {})
+    Promise.all([
+      fetch('/api/campaigns').then(r => r.json()),
+      fetch('/api/workspaces').then(r => r.json())
+    ]).then(([campData, wsData]) => {
+      setCampaigns(campData.campaigns || [])
+      setWorkspaces(wsData.workspaces || [])
+    }).catch(() => {})
   }, [])
 
   // Basic
@@ -33,6 +39,7 @@ export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: Creat
   const [alias, setAlias] = useState('')
   const [title, setTitle] = useState('')
   const [password, setPassword] = useState('')
+  const [generateQr, setGenerateQr] = useState(false)
 
   // Schedule
   const [expiresAt, setExpiresAt] = useState('')
@@ -73,6 +80,7 @@ export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: Creat
       if (alias) body.customCode = alias
       if (title) body.title = title
       if (password) body.password = password
+      if (generateQr) body.generateQr = true
       if (expiresAt) body.expiresAt = new Date(expiresAt).toISOString()
       if (startsAt) body.startsAt = new Date(startsAt).toISOString()
       if (maxClicks) body.maxClicks = parseInt(maxClicks)
@@ -85,6 +93,7 @@ export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: Creat
       if (ogDescription) body.ogDescription = ogDescription
       if (ogImage) body.ogImage = ogImage
       if (campaignId) body.campaignId = campaignId
+      if (workspaceId) body.workspaceId = workspaceId
 
       const res = await fetch('/api/links', {
         method: 'POST',
@@ -207,9 +216,24 @@ export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: Creat
               </div>
               <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
+                  <label style={lbl}>Espaço / Workspace</label>
+                  <select
+                    value={workspaceId}
+                    onChange={e => setWorkspaceId(e.target.value)}
+                    style={{ ...inp, cursor: 'pointer' }}
+                  >
+                    <option value="">Espaço Pessoal</option>
+                    {workspaces.map(ws => (
+                      <option key={ws.id} value={ws.id}>{ws.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label style={lbl}>Senha (opcional)</label>
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Proteger com senha" style={inp} />
                 </div>
+              </div>
+              <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={lbl}>Campanha</label>
                   <select
@@ -223,6 +247,31 @@ export function CreateLinkModal({ onClose, onSuccess, defaultCampaignId }: Creat
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div style={{ marginTop: '4px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                  <div style={{ position: 'relative', width: '36px', height: '20px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={generateQr} 
+                      onChange={e => setGenerateQr(e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <div style={{ 
+                      position: 'absolute', inset: 0, borderRadius: '20px',
+                      background: generateQr ? 'var(--primary)' : 'var(--bg-tertiary)',
+                      transition: 'background 0.2s',
+                      border: '1px solid var(--border-secondary)'
+                    }} />
+                    <div style={{ 
+                      position: 'absolute', top: '2px', left: generateQr ? '18px' : '2px',
+                      width: '14px', height: '14px', borderRadius: '50%', background: 'white',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s'
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Gerar QR Code para este link?</span>
+                </label>
               </div>
             </div>
           )}

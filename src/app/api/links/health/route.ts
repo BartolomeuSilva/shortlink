@@ -1,89 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-
-// GET  /api/links/health — list health status of all user's links
-// POST /api/links/health — trigger a health check for a specific link (body: { linkId })
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = session?.user?.id
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const links = await prisma.link.findMany({
-    where: { userId: session.user.id, isActive: true },
-    select: {
-      id: true,
-      shortCode: true,
-      title: true,
-      originalUrl: true,
-      healthStatus: true,
-      lastHealthCheck: true,
-      clickCount: true,
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-  })
+  try {
+    const { data: links, error } = await supabaseAdmin
+      .from('Link')
+      .select('id, shortCode, title, originalUrl, healthStatus, lastHealthCheck, clickCount')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .order('createdAt', { ascending: false })
+      .limit(100)
 
-  return NextResponse.json({ links })
+    if (error) throw error
+
+    return NextResponse.json({ links: links || [] })
+  } catch (err: any) {
+    console.error('❌ Erro ao buscar saúde dos links:', err)
+    return NextResponse.json({ error: 'Erro ao carregar monitoramento' }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = session?.user?.id
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { linkId } = await req.json()
+  try {
+    const { linkId } = await req.json()
 
-  const link = await prisma.link.findFirst({
-    where: { id: linkId, userId: session.user.id },
-    select: { id: true, originalUrl: true },
-  })
+    const { data: link } = await supabaseAdmin
+      .from('Link')
+      .select('id, originalUrl')
+      .eq('id', linkId)
+      .eq('userId', userId)
+      .single()
 
-  if (!link) return NextResponse.json({ error: 'Link não encontrado' }, { status: 404 })
+    if (!link) return NextResponse.json({ error: 'Link não encontrado' }, { status: 404 })
 
-  const result = await checkUrl(link.originalUrl)
+    const result = await checkUrl(link.originalUrl)
 
-  await prisma.link.update({
-    where: { id: link.id },
-    data: { healthStatus: result.status, lastHealthCheck: new Date() },
-  })
+    await supabaseAdmin
+      .from('Link')
+      .update({ 
+        healthStatus: result.status, 
+        lastHealthCheck: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', link.id)
 
-  return NextResponse.json(result)
+    return NextResponse.json(result)
+  } catch (err: any) {
+    console.error('❌ Erro ao verificar link:', err)
+    return NextResponse.json({ error: 'Erro ao verificar link' }, { status: 500 })
+  }
 }
 
-// Bulk check — called from a cron or manual trigger
 export async function PATCH(req: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = session?.user?.id
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Only check links not checked in the last 6 hours
-  const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000)
+  try {
+    const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
 
-  const links = await prisma.link.findMany({
-    where: {
-      userId: session.user.id,
-      isActive: true,
-      OR: [{ lastHealthCheck: null }, { lastHealthCheck: { lt: cutoff } }],
-    },
-    select: { id: true, originalUrl: true },
-    take: 20,
-  })
+    // Buscar links que nunca foram checados ou checados há mais de 6h
+    // Usando OR via filtro do Supabase
+    const { data: links } = await supabaseAdmin
+      .from('Link')
+      .select('id, originalUrl')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .or(`lastHealthCheck.is.null,lastHealthCheck.lt.${cutoff}`)
+      .limit(20)
 
-  const results = await Promise.allSettled(
-    links.map(async (link) => {
-      const result = await checkUrl(link.originalUrl)
-      await prisma.link.update({
-        where: { id: link.id },
-        data: { healthStatus: result.status, lastHealthCheck: new Date() },
+    if (!links) return NextResponse.json({ checked: 0, results: [] })
+
+    const results = await Promise.allSettled(
+      links.map(async (link) => {
+        const result = await checkUrl(link.originalUrl)
+        await supabaseAdmin
+          .from('Link')
+          .update({ 
+            healthStatus: result.status, 
+            lastHealthCheck: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          })
+          .eq('id', link.id)
+        return { id: link.id, ...result }
       })
-      return { id: link.id, ...result }
-    })
-  )
+    )
 
-  const checked = results
-    .filter((r): r is PromiseFulfilledResult<{ id: string; status: string; statusCode?: number }> => r.status === 'fulfilled')
-    .map(r => r.value)
+    const checked = results
+      .filter((r): r is PromiseFulfilledResult<{ id: string; status: string; statusCode?: number }> => r.status === 'fulfilled')
+      .map(r => r.value)
 
-  return NextResponse.json({ checked: checked.length, results: checked })
+    return NextResponse.json({ checked: checked.length, results: checked })
+  } catch (err: any) {
+    console.error('❌ Erro em bulk health check:', err)
+    return NextResponse.json({ error: 'Erro no processamento' }, { status: 500 })
+  }
 }
 
 async function checkUrl(url: string): Promise<{ status: string; statusCode?: number; latencyMs?: number }> {

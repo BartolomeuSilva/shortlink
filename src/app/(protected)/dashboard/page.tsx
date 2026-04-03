@@ -1,137 +1,146 @@
-import { Suspense } from 'react'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { formatNumber } from '@/lib/utils'
+import { supabaseAdmin } from '@/lib/supabase'
 import { DashboardClient } from './DashboardClient'
-import { subDays, startOfDay } from 'date-fns'
+import { subDays, startOfDay, format } from 'date-fns'
 
-async function getDashboardData(userId: string) {
+async function getDashboardData(userId: string, workspaceId?: string) {
   const now = new Date()
-  const thirtyDaysAgo = startOfDay(subDays(now, 29))
-  const sevenDaysAgo = startOfDay(subDays(now, 6))
-  const prevThirtyStart = startOfDay(subDays(now, 59))
+  const thirtyDaysAgo = startOfDay(subDays(now, 29)).toISOString()
+  const prevThirtyStart = startOfDay(subDays(now, 59)).toISOString()
+  const sevenDaysAgo = startOfDay(subDays(now, 6)).toISOString()
 
-  const [
-    totalLinks,
-    activeLinks,
-    totalClicks,
-    prevPeriodClicks,
-    recentLinks,
-    clicksByDay,
-    clicksByCountry,
-    clicksByDevice,
-  ] = await Promise.all([
-    prisma.link.count({ where: { userId } }),
-    prisma.link.count({ where: { userId, isActive: true } }),
-    prisma.click.count({
-      where: {
-        link: { userId },
-        timestamp: { gte: thirtyDaysAgo },
-      },
-    }),
-    prisma.click.count({
-      where: {
-        link: { userId },
-        timestamp: { gte: prevThirtyStart, lt: thirtyDaysAgo },
-      },
-    }),
-    prisma.link.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      include: { _count: { select: { clicks: true } } },
-    }),
-    prisma.click.groupBy({
-      by: ['timestamp'],
-      where: {
-        link: { userId },
-        timestamp: { gte: thirtyDaysAgo },
-      },
-      _count: true,
-    }),
-    prisma.click.groupBy({
-      by: ['country', 'countryCode'],
-      where: {
-        link: { userId },
-        timestamp: { gte: thirtyDaysAgo },
-        country: { not: null },
-      },
-      _count: { _all: true },
-      orderBy: { _count: { country: 'desc' } },
-      take: 5,
-    }),
-    prisma.click.groupBy({
-      by: ['deviceType'],
-      where: {
-        link: { userId },
-        timestamp: { gte: thirtyDaysAgo },
-      },
-      _count: { _all: true },
-      orderBy: { _count: { deviceType: 'desc' } },
-    }),
-  ])
-
-  // Build clicks by day map
-  const clickMap = new Map<string, number>()
-  for (const row of clicksByDay) {
-    const day = row.timestamp.toISOString().split('T')[0]
-    clickMap.set(day, (clickMap.get(day) || 0) + row._count)
+  // 1. Total de Links e Cliques Totais (Lifetime) filtrados por Workspace
+  let linksBaseQuery = supabaseAdmin.from('Link').select('id, clickCount, isActive, createdAt, shortCode, originalUrl, title')
+  
+  if (workspaceId) {
+    linksBaseQuery = linksBaseQuery.eq('workspaceId', workspaceId)
+  } else {
+    linksBaseQuery = linksBaseQuery.eq('userId', userId).is('workspaceId', null)
   }
 
+  const { data: linksStats } = await linksBaseQuery
+
+  const totalLinks = linksStats?.length || 0
+  const totalClicksLifetime = linksStats?.reduce((acc, curr) => acc + (curr.clickCount || 0), 0) || 0
+  const activeLinks = linksStats?.filter(l => l.isActive).length || 0
+
+  // 2. Cliques nos últimos 30 dias
+  let clicksQuery = supabaseAdmin
+    .from('Click')
+    .select('id, timestamp, country, countryCode, deviceType, Link!inner(userId, workspaceId)')
+    .gte('timestamp', thirtyDaysAgo)
+
+  if (workspaceId) {
+    clicksQuery = clicksQuery.eq('Link.workspaceId', workspaceId)
+  } else {
+    clicksQuery = clicksQuery.eq('Link.userId', userId).is('Link.workspaceId', null)
+  }
+
+  const { data: clicks30 } = await clicksQuery
+  const totalClicks30d = clicks30?.length || 0
+
+  // 3. Cliques no período anterior (para o Delta)
+  let prevClicksQuery = supabaseAdmin
+    .from('Click')
+    .select('id, Link!inner(userId, workspaceId)', { count: 'exact', head: true })
+    .gte('timestamp', prevThirtyStart)
+    .lt('timestamp', thirtyDaysAgo)
+
+  if (workspaceId) {
+    prevClicksQuery = prevClicksQuery.eq('Link.workspaceId', workspaceId)
+  } else {
+    prevClicksQuery = prevClicksQuery.eq('Link.userId', userId).is('Link.workspaceId', null)
+  }
+
+  const { count: prevPeriodClicks } = await prevClicksQuery
+
+  // 4. Links Recentes (usando os dados já buscados em linksStats)
+  const recentLinks = [...(linksStats || [])]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+
+  // 5. Cliques Semanais
+  const weeklyClicks = clicks30?.filter(c => new Date(c.timestamp) >= new Date(sevenDaysAgo)).length || 0
+
+  // 6. Processar dados para o gráfico
   const chartData: { date: string; clicks: number }[] = []
+  const clickMap = new Map<string, number>()
+  
+  clicks30?.forEach(c => {
+    const day = format(new Date(c.timestamp), 'yyyy-MM-dd')
+    clickMap.set(day, (clickMap.get(day) || 0) + 1)
+  })
+
   for (let i = 29; i >= 0; i--) {
     const d = startOfDay(subDays(now, i))
-    const key = d.toISOString().split('T')[0]
+    const key = format(d, 'yyyy-MM-dd')
     chartData.push({ date: key, clicks: clickMap.get(key) || 0 })
   }
 
-  const delta = prevPeriodClicks > 0
-    ? Math.round(((totalClicks - prevPeriodClicks) / prevPeriodClicks) * 100)
-    : totalClicks > 0 ? 100 : 0
-
-  // Weekly clicks for quick stat
-  const weeklyClicks = await prisma.click.count({
-    where: {
-      link: { userId },
-      timestamp: { gte: sevenDaysAgo },
-    },
+  // 7. Processar Geo Data
+  const geoMap = new Map<string, { country: string, countryCode: string, clicks: number }>()
+  clicks30?.forEach(c => {
+    if (c.country) {
+      const existing = geoMap.get(c.country)
+      if (existing) {
+        existing.clicks++
+      } else {
+        geoMap.set(c.country, { country: c.country, countryCode: c.countryCode || '', clicks: 1 })
+      }
+    }
   })
+  const geoData = Array.from(geoMap.values())
+    .sort((a, b) => b.clicks - a.clicks)
+    .slice(0, 5)
+
+  // 8. Processar Device Data
+  const deviceMap = new Map<string, number>()
+  clicks30?.forEach(c => {
+    const type = c.deviceType || 'UNKNOWN'
+    deviceMap.set(type, (deviceMap.get(type) || 0) + 1)
+  })
+  const deviceData = Array.from(deviceMap.entries()).map(([deviceType, clicks]) => ({
+    deviceType,
+    clicks
+  }))
+
+  const delta = (prevPeriodClicks || 0) > 0
+    ? Math.round(((totalClicks30d - (prevPeriodClicks || 0)) / (prevPeriodClicks || 0)) * 100)
+    : totalClicks30d > 0 ? 100 : 0
 
   return {
     metrics: {
-      totalClicks,
+      totalClicks: totalClicksLifetime,
       delta,
       activeLinks,
       totalLinks,
       weeklyClicks,
     },
     chartData,
-    recentLinks: recentLinks.map((l) => ({
+    recentLinks: recentLinks.map((l: any) => ({
       id: l.id,
       shortCode: l.shortCode,
       originalUrl: l.originalUrl,
       title: l.title,
-      clickCount: l._count.clicks,
+      clickCount: l.clickCount || 0,
       isActive: l.isActive,
-      createdAt: l.createdAt.toISOString(),
+      createdAt: l.createdAt,
     })),
-    geoData: clicksByCountry.map((g) => ({
-      country: g.country || 'Desconhecido',
-      countryCode: g.countryCode,
-      clicks: g._count._all,
-    })),
-    deviceData: clicksByDevice.map((d) => ({
-      deviceType: d.deviceType,
-      clicks: d._count._all,
-    })),
+    geoData,
+    deviceData,
   }
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ workspaceId?: string }>
+}) {
   const session = await auth()
   if (!session?.user?.id) return null
 
-  const data = await getDashboardData(session.user.id)
+  const params = await searchParams
+  const data = await getDashboardData(session.user.id, params.workspaceId)
 
   return (
     <DashboardClient

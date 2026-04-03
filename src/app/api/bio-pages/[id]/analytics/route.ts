@@ -1,111 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const bio = await prisma.bioPage.findUnique({ where: { id: params.id } })
-  if (!bio || bio.userId !== session.user.id) {
-    return NextResponse.json({ error: 'Bio não encontrada' }, { status: 404 })
-  }
+  const { data: bio } = await supabaseAdmin
+    .from('BioPage')
+    .select('id, userId, clicksTotal')
+    .eq('id', params.id)
+    .single()
+
+  if (!bio || bio.userId !== session.user.id) return NextResponse.json({ error: 'Bio não encontrada' }, { status: 404 })
 
   const { searchParams } = new URL(req.url)
   const days = parseInt(searchParams.get('days') || '30')
   const since = new Date()
   since.setDate(since.getDate() - days)
+  const sinceIso = since.toISOString()
 
-  // Time series data
-  const clicksByDay = await prisma.$queryRaw<Array<{ date: string; clicks: number }>>`
-    SELECT DATE("timestamp")::text as date, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY DATE("timestamp")
-    ORDER BY date ASC
-  `
+  const [
+    { data: clicksRaw },
+    { data: topItems },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from('BioPageClick')
+      .select('timestamp, device, browser, os, country, referrer')
+      .eq('bioPageId', params.id)
+      .gte('timestamp', sinceIso),
+    supabaseAdmin
+      .from('BioPageItem')
+      .select('id, label, icon, clicks')
+      .eq('bioPageId', params.id)
+      .order('clicks', { ascending: false }),
+  ])
 
-  // Device breakdown
-  const deviceBreakdown = await prisma.$queryRaw<Array<{ device: string; clicks: number }>>`
-    SELECT COALESCE(device, 'Unknown') as device, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY device
-    ORDER BY clicks DESC
-  `
+  const clicks = clicksRaw || []
 
-  // Browser breakdown
-  const browserBreakdown = await prisma.$queryRaw<Array<{ browser: string; clicks: number }>>`
-    SELECT COALESCE(browser, 'Unknown') as browser, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY browser
-    ORDER BY clicks DESC
-  `
+  // Aggregate in JS (avoids needing Supabase RPC)
+  const byDay: Record<string, number> = {}
+  const byDevice: Record<string, number> = {}
+  const byBrowser: Record<string, number> = {}
+  const byOs: Record<string, number> = {}
+  const byCountry: Record<string, number> = {}
+  const byReferrer: Record<string, number> = {}
+  const byHour: Record<number, number> = {}
 
-  // OS breakdown
-  const osBreakdown = await prisma.$queryRaw<Array<{ os: string; clicks: number }>>`
-    SELECT COALESCE(os, 'Unknown') as os, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY os
-    ORDER BY clicks DESC
-  `
+  for (const c of clicks) {
+    const date = c.timestamp?.slice(0, 10) || ''
+    byDay[date] = (byDay[date] || 0) + 1
 
-  // Country breakdown
-  const countryBreakdown = await prisma.$queryRaw<Array<{ country: string; clicks: number }>>`
-    SELECT COALESCE(country, 'Unknown') as country, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY country
-    ORDER BY clicks DESC
-    LIMIT 10
-  `
+    const device = c.device || 'Unknown'
+    byDevice[device] = (byDevice[device] || 0) + 1
 
-  // Referrer breakdown
-  const referrerBreakdown = await prisma.$queryRaw<Array<{ referrer: string; clicks: number }>>`
-    SELECT COALESCE(referrer, 'Direct') as referrer, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY referrer
-    ORDER BY clicks DESC
-    LIMIT 10
-  `
+    const browser = c.browser || 'Unknown'
+    byBrowser[browser] = (byBrowser[browser] || 0) + 1
 
-  // Top items by clicks
-  const topItems = await prisma.bioPageItem.findMany({
-    where: { bioPageId: params.id },
-    orderBy: { clicks: 'desc' },
-    select: { id: true, label: true, icon: true, clicks: true },
-  })
+    const os = c.os || 'Unknown'
+    byOs[os] = (byOs[os] || 0) + 1
 
-  // Hour of day heatmap
-  const hourData = await prisma.$queryRaw<Array<{ hour: number; clicks: number }>>`
-    SELECT EXTRACT(HOUR FROM "timestamp")::int as hour, COUNT(*)::int as clicks
-    FROM "BioPageClick"
-    WHERE "bioPageId" = ${params.id} AND "timestamp" >= ${since}
-    GROUP BY hour
-    ORDER BY hour ASC
-  `
+    const country = c.country || 'Unknown'
+    byCountry[country] = (byCountry[country] || 0) + 1
+
+    const referrer = c.referrer || 'Direct'
+    byReferrer[referrer] = (byReferrer[referrer] || 0) + 1
+
+    const hour = new Date(c.timestamp).getHours()
+    byHour[hour] = (byHour[hour] || 0) + 1
+  }
+
+  const toArr = (obj: Record<string, number>, key: string) =>
+    Object.entries(obj).map(([value, count]) => ({ [key]: value, clicks: count }))
+      .sort((a, b) => b.clicks - a.clicks)
 
   return NextResponse.json({
-    chartData: clicksByDay,
-    devices: deviceBreakdown,
-    browsers: browserBreakdown,
-    os: osBreakdown,
-    countries: countryBreakdown,
-    referrers: referrerBreakdown,
-    topItems,
-    hourData,
+    chartData: Object.entries(byDay).sort().map(([date, clicks]) => ({ date, clicks })),
+    devices:   toArr(byDevice, 'device'),
+    browsers:  toArr(byBrowser, 'browser'),
+    os:        toArr(byOs, 'os'),
+    countries: toArr(byCountry, 'country').slice(0, 10),
+    referrers: toArr(byReferrer, 'referrer').slice(0, 10),
+    hourData:  Array.from({ length: 24 }, (_, h) => ({ hour: h, clicks: byHour[h] || 0 })),
+    topItems:  topItems || [],
     summary: {
       totalClicks: bio.clicksTotal,
-      totalItems: topItems.length,
-      topCountry: countryBreakdown[0]?.country || 'N/A',
-      topDevice: deviceBreakdown[0]?.device || 'N/A',
-      topBrowser: browserBreakdown[0]?.browser || 'N/A',
+      totalItems: topItems?.length || 0,
+      topCountry: toArr(byCountry, 'country')[0]?.country || 'N/A',
+      topDevice:  toArr(byDevice, 'device')[0]?.device || 'N/A',
+      topBrowser: toArr(byBrowser, 'browser')[0]?.browser || 'N/A',
     },
   })
 }

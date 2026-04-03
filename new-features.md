@@ -12,9 +12,9 @@ Lista de funcionalidades propostas para tornar o app superior ao bit.ly.
 
 ## Colaboração
 
-- [ ] Equipes com múltiplos usuários
-- [ ] Papéis (admin, editor, viewer)
-- [ ] Compartilhar links com equipes
+- [x] Equipes com múltiplos usuários
+- [x] Papéis (admin, editor, viewer)
+- [x] Compartilhar links com equipes
 
 ## Monetização
 

@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 
@@ -7,21 +7,17 @@ export default async function SettingsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      name: true,
-      email: true,
-      image: true,
-      plan: true,
-      createdAt: true,
-      _count: { select: { links: true } },
-    },
-  })
+  const { data: user, error } = await supabaseAdmin
+    .from('User')
+    .select('name, email, image, plan, createdAt, links:Link(count)')
+    .eq('id', session.user.id)
+    .single()
 
-  if (!user) redirect('/login')
+  if (!user || error) redirect('/login')
 
-  const memberSince = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(user.createdAt)
+  const memberSince = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(user.createdAt))
+
+  const linksCount = user.links?.[0]?.count || 0
 
   return (
     <>
@@ -40,7 +36,7 @@ export default async function SettingsPage() {
             }}>
               {user.image
                 ? <img src={user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                : (user.name || user.email || '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                : (user.name || user.email || '?').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
               }
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -71,7 +67,7 @@ export default async function SettingsPage() {
               { label: 'Nome', value: user.name || '—' },
               { label: 'Email', value: user.email },
               { label: 'Plano', value: user.plan },
-              { label: 'Links criados', value: String(user._count.links) },
+              { label: 'Links criados', value: String(linksCount) },
               { label: 'Membro desde', value: memberSince },
             ].map((row, i, arr) => (
               <div key={row.label} style={{

@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  app:
+    image: bartolomeusilva/123bit-app:latest
+    networks:
+      - network_public
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=network_public"
+        # Roteador principal (HTTPS)
+        - "traefik.http.routers.123bit.rule=Host(`123bit.ichatbot.com.br`)"
+        - "traefik.http.routers.123bit.entrypoints=websecure"
+        - "traefik.http.routers.123bit.tls=true"
+        - "traefik.http.routers.123bit.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.123bit.loadbalancer.server.port=3000"
+
+        # Roteador para capturar a porta 80 e evitar o 404 inicial
+        - "traefik.http.routers.123bit-http.rule=Host(`123bit.ichatbot.com.br`)"
+        - "traefik.http.routers.123bit-http.entrypoints=web"
+        - "traefik.http.routers.123bit-http.middlewares=https-redirect"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=https://ifstampptcvffajbvqhs.supabase.co
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_XZOdOkAgq0nwnAxzh2OmYA_3JLPTAp0
+      - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_URL=https://123bit.ichatbot.com.br
+      - NEXT_PUBLIC_APP_URL=https://123bit.ichatbot.com.br
+
+networks:
+  network_public:
+    external: true

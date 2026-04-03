@@ -1,57 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { z } from 'zod'
-
-const ALLOWED_EVENTS = ['link.clicked', 'link.created', 'link.expired']
+import { nanoid } from 'nanoid'
 
 const schema = z.object({
-  name:   z.string().min(1).max(80),
-  url:    z.string().url('URL inválida'),
-  secret: z.string().max(100).optional(),
-  events: z.array(z.string()).min(1, 'Selecione ao menos um evento'),
+  name: z.string().min(1).max(50),
+  url: z.string().url(),
+  events: z.array(z.string()).min(1),
+  secret: z.string().optional(),
 })
 
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const webhooks = await prisma.webhook.findMany({
-    where: { userId: session.user.id },
-    include: {
-      _count: { select: { deliveries: true } },
-      deliveries: {
-        orderBy: { deliveredAt: 'desc' },
-        take: 1,
-        select: { success: true, deliveredAt: true, statusCode: true },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  try {
+    const { data: webhooks, error } = await supabaseAdmin
+      .from('Webhook')
+      .select('*')
+      .eq('userId', session.user.id)
+      .order('createdAt', { ascending: false })
 
-  return NextResponse.json({ webhooks })
+    if (error) throw error
+
+    return NextResponse.json({ webhooks: webhooks || [] })
+  } catch (err: any) {
+    console.error('❌ Erro ao buscar webhooks:', err)
+    return NextResponse.json({ error: 'Erro ao carregar webhooks' }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+  try {
+    const body = await req.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
 
-  const validEvents = parsed.data.events.filter(e => ALLOWED_EVENTS.includes(e))
-  if (validEvents.length === 0) return NextResponse.json({ error: 'Eventos inválidos' }, { status: 400 })
+    const now = new Date().toISOString()
+    const { data: webhook, error } = await supabaseAdmin
+      .from('Webhook')
+      .insert([
+        {
+          id: nanoid(),
+          userId: session.user.id,
+          name: parsed.data.name,
+          url: parsed.data.url,
+          events: parsed.data.events,
+          secret: parsed.data.secret || null,
+          active: true,
+          createdAt: now,
+          updatedAt: now
+        }
+      ])
+      .select()
+      .single()
 
-  const webhook = await prisma.webhook.create({
-    data: {
-      userId: session.user.id,
-      name:   parsed.data.name,
-      url:    parsed.data.url,
-      secret: parsed.data.secret || null,
-      events: validEvents,
-    },
-  })
+    if (error) throw error
 
-  return NextResponse.json({ webhook }, { status: 201 })
+    return NextResponse.json({ webhook }, { status: 201 })
+  } catch (err: any) {
+    console.error('❌ Erro ao criar webhook:', err)
+    return NextResponse.json({ error: 'Erro ao criar webhook' }, { status: 500 })
+  }
 }

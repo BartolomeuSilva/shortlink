@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { redisGet, redisSet } from '@/lib/redis'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { headers } from 'next/headers'
 import { hashIp } from '@/lib/utils'
+import { nanoid } from 'nanoid'
 
 let geoip: { lookup: (ip: string) => { country?: string; city?: string } | null } | null = null
 
@@ -40,7 +41,6 @@ function evaluateRules(
 ): string | null {
   const activeRules = rules.filter(r => r.active).sort((a, b) => a.order - b.order)
 
-  // Handle A/B rules separately (weight-based selection among all ab rules)
   const abRules = activeRules.filter(r => r.type === 'ab')
   const otherRules = activeRules.filter(r => r.type !== 'ab')
 
@@ -67,7 +67,6 @@ function evaluateRules(
     }
   }
 
-  // A/B testing: weighted random selection
   if (abRules.length > 0) {
     const totalWeight = abRules.reduce((s, r) => s + r.weight, 0)
     let rand = Math.random() * totalWeight
@@ -94,45 +93,22 @@ export async function GET(
   if (linkData) {
     link = JSON.parse(linkData)
   } else {
-    link = await prisma.link.findUnique({
-      where: { shortCode },
-      select: {
-        id: true,
-        originalUrl: true,
-        passwordRequired: true,
-        password: true,
-        expiresAt: true,
-        startsAt: true,
-        maxClicks: true,
-        clickCount: true,
-        isActive: true,
-        userId: true,
-        ogTitle: true,
-        ogDescription: true,
-        ogImage: true,
-        redirectRules: {
-          where: { active: true },
-          orderBy: { order: 'asc' },
-          select: { id: true, type: true, condition: true, destination: true, weight: true, order: true, active: true },
-        },
-        user: {
-          select: {
-            metaPixelId: true,
-            googleTagId: true,
-            tiktokPixelId: true,
-            linkedinTagId: true,
-          },
-        },
-      },
-    })
+    // Buscar link no Supabase com relações
+    const { data: linkResult } = await supabaseAdmin
+      .from('Link')
+      .select(`
+        *,
+        redirectRules:RedirectRule(*),
+        user:User(metaPixelId, googleTagId, tiktokPixelId, linkedinTagId)
+      `)
+      .eq('shortCode', shortCode)
+      .eq('RedirectRule.active', true)
+      .single()
+
+    link = linkResult
 
     if (link) {
-      const cached = {
-        ...link,
-        redirectRules: link.redirectRules,
-        user: link.user,
-      }
-      await redisSet(cacheKey, JSON.stringify(cached), 3600)
+      await redisSet(cacheKey, JSON.stringify(link), 3600)
     }
   }
 
@@ -144,7 +120,6 @@ export async function GET(
     return NextResponse.json({ error: 'Link is disabled' }, { status: 410 })
   }
 
-  // Scheduled: not yet started
   if (link.startsAt && new Date(link.startsAt) > new Date()) {
     return NextResponse.json({ error: 'Link not yet active' }, { status: 410 })
   }
@@ -153,7 +128,6 @@ export async function GET(
     return NextResponse.json({ error: 'Link has expired' }, { status: 410 })
   }
 
-  // Max clicks limit
   if (link.maxClicks && link.clickCount >= link.maxClicks) {
     return NextResponse.json({ error: 'Link click limit reached' }, { status: 410 })
   }
@@ -162,7 +136,6 @@ export async function GET(
     return NextResponse.redirect(new URL(`/${shortCode}/auth`, request.url))
   }
 
-  // Parse request metadata for smart redirects
   const headersList = headers()
   const userAgent = headersList.get('user-agent') || ''
   const forwarded = headersList.get('x-forwarded-for') || ''
@@ -194,7 +167,6 @@ export async function GET(
 
   const country = geo?.country || null
 
-  // Evaluate smart redirect rules
   let finalUrl = link.originalUrl
   const rules: RedirectRule[] = link.redirectRules || []
   if (rules.length > 0) {
@@ -203,7 +175,6 @@ export async function GET(
     if (matched) finalUrl = matched
   }
 
-  // OG preview: if custom OG set, show interstitial HTML before redirecting
   const hasOG = link.ogTitle || link.ogDescription || link.ogImage
   if (hasOG) {
     const html = buildOGPage(link, finalUrl)
@@ -215,7 +186,6 @@ export async function GET(
 
   await recordClick(link.id, ip, userAgent, geo, deviceType, os, browser, headersList.get('referer') || '')
 
-  // Inject retargeting pixels via redirect page if any pixels configured
   const pixels = link.user
   const hasPixels = pixels && (pixels.metaPixelId || pixels.googleTagId || pixels.tiktokPixelId || pixels.linkedinTagId)
 
@@ -288,45 +258,83 @@ async function recordClick(
   browser: string | null,
   referer: string
 ) {
+  console.log('🖱️ Tentando registrar clique para o link:', linkId)
   try {
-    await prisma.click.create({
-      data: {
-        linkId,
-        ipHash: hashIp(ip),
-        country: geo?.country || null,
-        city: geo?.city || null,
-        countryCode: geo?.country || null,
-        deviceType,
-        os,
-        browser,
-        referer: referer.substring(0, 500),
-        userAgent: userAgent.substring(0, 500),
-      },
-    })
+    // 1. Registrar clique no Supabase
+    const { error: clickError } = await supabaseAdmin
+      .from('Click')
+      .insert([
+        {
+          id: nanoid(),
+          linkId,
+          ipHash: hashIp(ip),
+          country: geo?.country || null,
+          city: geo?.city || null,
+          countryCode: geo?.country || null,
+          deviceType,
+          os,
+          browser,
+          referer: referer.substring(0, 500),
+          userAgent: userAgent.substring(0, 500),
+          timestamp: new Date().toISOString()
+        }
+      ])
 
-    await prisma.link.update({
-      where: { id: linkId },
-      data: { clickCount: { increment: 1 } },
-    })
+    if (clickError) {
+      console.error('❌ Erro ao inserir clique no Supabase:', clickError)
+      return
+    }
 
-    // Fire webhooks async (do not await)
+    // 2. Incrementar contador de cliques no Link
+    const { data: link, error: fetchError } = await supabaseAdmin
+      .from('Link')
+      .select('clickCount')
+      .eq('id', linkId)
+      .single()
+    
+    if (fetchError) {
+      console.error('❌ Erro ao buscar contador atual:', fetchError)
+      return
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('Link')
+      .update({ 
+        clickCount: (link.clickCount || 0) + 1,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', linkId)
+
+    if (updateError) {
+      console.error('❌ Erro ao atualizar contador de cliques:', updateError)
+    } else {
+      console.log('✅ Clique registrado com sucesso!')
+    }
+
     fireWebhooks(linkId, { deviceType, country: geo?.country || null }).catch(() => {})
   } catch (error) {
-    console.error('Error recording click:', error)
+    console.error('❌ Erro inesperado ao registrar clique:', error)
   }
 }
 
 async function fireWebhooks(linkId: string, meta: { deviceType: string; country: string | null }) {
   try {
-    const link = await prisma.link.findUnique({
-      where: { id: linkId },
-      select: { userId: true, shortCode: true },
-    })
+    const { data: link } = await supabaseAdmin
+      .from('Link')
+      .select('userId, shortCode')
+      .eq('id', linkId)
+      .single()
+
     if (!link?.userId) return
 
-    const webhooks = await prisma.webhook.findMany({
-      where: { userId: link.userId, active: true, events: { has: 'link.clicked' } },
-    })
+    const { data: webhooks } = await supabaseAdmin
+      .from('Webhook')
+      .select('*')
+      .eq('userId', link.userId)
+      .eq('active', true)
+      .contains('events', ['link.clicked'])
+
+    if (!webhooks) return
 
     const payload = JSON.stringify({
       event: 'link.clicked',
@@ -347,24 +355,29 @@ async function fireWebhooks(linkId: string, meta: { deviceType: string; country:
           body: payload,
           signal: AbortSignal.timeout(5000),
         })
-        await prisma.webhookDelivery.create({
-          data: {
-            webhookId: wh.id,
-            event: 'link.clicked',
-            payload,
-            statusCode: res.status,
-            success: res.ok,
-          },
-        })
+        
+        await supabaseAdmin
+          .from('WebhookDelivery')
+          .insert([
+            {
+              webhookId: wh.id,
+              event: 'link.clicked',
+              payload,
+              statusCode: res.status,
+              success: res.ok,
+            }
+          ])
       } catch {
-        await prisma.webhookDelivery.create({
-          data: {
-            webhookId: wh.id,
-            event: 'link.clicked',
-            payload,
-            success: false,
-          },
-        }).catch(() => {})
+        await supabaseAdmin
+          .from('WebhookDelivery')
+          .insert([
+            {
+              webhookId: wh.id,
+              event: 'link.clicked',
+              payload,
+              success: false,
+            }
+          ])
       }
     }
   } catch {}

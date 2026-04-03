@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { z } from 'zod'
+import { nanoid } from 'nanoid'
 
 const schema = z.object({
   name: z.string().min(1).max(80),
@@ -12,48 +13,94 @@ export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const memberships = await prisma.workspaceMember.findMany({
-    where: { userId: session.user.id },
-    include: {
-      workspace: {
-        include: {
-          _count: { select: { members: true } },
-        },
-      },
-    },
-    orderBy: { joinedAt: 'asc' },
-  })
+  try {
+    const { data: memberships, error } = await supabaseAdmin
+      .from('WorkspaceMember')
+      .select(`
+        role,
+        workspace:Workspace (
+          *,
+          members:WorkspaceMember(count)
+        )
+      `)
+      .eq('userId', session.user.id)
+      .order('joinedAt', { ascending: true })
 
-  const workspaces = memberships.map(m => ({
-    ...m.workspace,
-    role: m.role,
-    memberCount: m.workspace._count.members,
-  }))
+    if (error) throw error
 
-  return NextResponse.json({ workspaces })
+    const workspaces = (memberships || []).map((m: any) => ({
+      ...m.workspace,
+      role: m.role,
+      memberCount: m.workspace.members[0].count,
+    }))
+
+    return NextResponse.json({ workspaces })
+  } catch (err: any) {
+    console.error('❌ Erro ao buscar workspaces:', err)
+    return NextResponse.json({ error: 'Erro ao carregar workspaces' }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const body = await req.json()
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
-
-  const userId = session.user.id
+  const userId = session?.user?.id
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const existing = await prisma.workspace.findUnique({ where: { slug: parsed.data.slug } })
-  if (existing) return NextResponse.json({ error: 'Este slug já está em uso' }, { status: 409 })
+  try {
+    const body = await req.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
 
-  const workspace = await prisma.$transaction(async tx => {
-    const ws = await tx.workspace.create({ data: { name: parsed.data.name, slug: parsed.data.slug } })
-    await tx.workspaceMember.create({
-      data: { workspaceId: ws.id, userId, role: 'OWNER' },
-    })
-    return ws
-  })
+    const { name, slug } = parsed.data
 
-  return NextResponse.json({ workspace }, { status: 201 })
+    // 1. Verificar se slug já existe
+    const { data: existing } = await supabaseAdmin
+      .from('Workspace')
+      .select('id')
+      .eq('slug', slug)
+      .single()
+
+    if (existing) return NextResponse.json({ error: 'Este slug já está em uso' }, { status: 409 })
+
+    const now = new Date().toISOString()
+    const workspaceId = nanoid()
+
+    // 2. Criar Workspace
+    const { data: workspace, error: wsError } = await supabaseAdmin
+      .from('Workspace')
+      .insert([
+        {
+          id: workspaceId,
+          name,
+          slug,
+          plan: 'FREE',
+          createdAt: now,
+          updatedAt: now
+        }
+      ])
+      .select()
+      .single()
+
+    if (wsError) throw wsError
+
+    // 3. Criar Membro (Owner)
+    const { error: memberError } = await supabaseAdmin
+      .from('WorkspaceMember')
+      .insert([
+        {
+          id: nanoid(),
+          workspaceId: workspaceId,
+          userId: userId,
+          role: 'OWNER',
+          joinedAt: now
+        }
+      ])
+
+    if (memberError) throw memberError
+
+    return NextResponse.json({ workspace }, { status: 201 })
+  } catch (err: any) {
+    console.error('❌ Erro ao criar workspace:', err)
+    return NextResponse.json({ error: 'Erro ao criar workspace' }, { status: 500 })
+  }
 }

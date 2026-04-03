@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { z } from 'zod'
 
 const updateProfileSchema = z.object({
@@ -15,26 +15,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      plan: true,
-      apiKey: true,
-      twoFactorEnabled: true,
-      createdAt: true,
-      _count: {
-        select: {
-          links: true,
-        },
-      },
-    },
-  })
+  const { data: user, error } = await supabaseAdmin
+    .from('User')
+    .select('id, name, email, image, plan, apiKey, twoFactorEnabled, createdAt, links:Link(count)')
+    .eq('id', session.user.id)
+    .single()
 
-  if (!user) {
+  if (!user || error) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
@@ -44,14 +31,16 @@ export async function GET(request: NextRequest) {
     ENTERPRISE: { links: Infinity, clicksPerMonth: Infinity },
   }
 
-  const limits = planLimits[user.plan as keyof typeof planLimits]
+  const userPlan = (user.plan as keyof typeof planLimits) || 'FREE'
+  const limits = planLimits[userPlan]
+  const linksCount = user.links?.[0]?.count || 0
 
   return NextResponse.json({
     ...user,
     limits,
     usage: {
-      links: user._count.links,
-      linksPercentage: Math.min((user._count.links / limits.links) * 100, 100),
+      links: linksCount,
+      linksPercentage: Math.min((linksCount / limits.links) * 100, 100),
     },
   })
 }
@@ -76,20 +65,21 @@ export async function PATCH(request: NextRequest) {
 
     const { name, image } = result.data
 
-    const user = await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
+    const now = new Date().toISOString()
+    const { data: user, error: updateError } = await supabaseAdmin
+      .from('User')
+      .update({
         ...(name !== undefined && { name }),
         ...(image !== undefined && { image }),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        plan: true,
-      },
-    })
+        updatedAt: now,
+      })
+      .eq('id', session.user.id)
+      .select('id, name, email, image, plan')
+      .single()
+
+    if (updateError) {
+      throw updateError
+    }
 
     return NextResponse.json({ user })
   } catch (error) {

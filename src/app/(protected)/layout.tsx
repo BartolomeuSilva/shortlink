@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { LayoutShell } from '@/components/layout/LayoutShell'
 
 export default async function ProtectedLayout({
@@ -14,11 +14,12 @@ export default async function ProtectedLayout({
     redirect('/login')
   }
 
-  // Buscar direto do banco para sempre ter nome e foto atualizados
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { name: true, email: true, image: true },
-  })
+  // Buscar direto do banco para sempre ter nome e foto atualizados usando Supabase
+  const { data: dbUser } = await supabaseAdmin
+    .from('User')
+    .select('name, email, image')
+    .eq('id', session.user.id)
+    .single()
 
   const user = {
     name: dbUser?.name ?? session.user.name,

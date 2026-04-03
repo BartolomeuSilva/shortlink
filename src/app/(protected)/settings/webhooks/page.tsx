@@ -158,9 +158,7 @@ export default function WebhooksPage() {
         )}
 
         {/* List */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)', fontSize: '14px' }}>Carregando...</div>
-        ) : webhooks.length === 0 ? (
+        {webhooks.length === 0 && !loading ? (
           <div className="card" style={{ padding: '48px', textAlign: 'center' }}>
             <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '6px' }}>Nenhum webhook ainda</div>
             <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Crie um webhook para integrar com Slack, Zapier, n8n e muito mais.</div>
@@ -168,7 +166,7 @@ export default function WebhooksPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {webhooks.map(wh => {
-              const lastDelivery = wh.deliveries[0]
+              const lastDelivery = wh.deliveries ? wh.deliveries[0] : null
               return (
                 <div key={wh.id} className="card" style={{ padding: '16px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>

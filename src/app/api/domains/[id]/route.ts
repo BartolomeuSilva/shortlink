@@ -1,32 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await auth()
-  if (!session?.user?.id) {
+  const userId = session?.user?.id
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { id } = params
 
   try {
-    const domain = await prisma.domain.findFirst({
-      where: { id, userId: session.user.id },
-    })
+    const { data: domain } = await supabaseAdmin
+      .from('Domain')
+      .select('id')
+      .eq('id', id)
+      .eq('userId', userId)
+      .single()
 
     if (!domain) {
       return NextResponse.json({ error: 'Domínio não encontrado' }, { status: 404 })
     }
 
-    await prisma.domain.delete({ where: { id } })
+    const { error } = await supabaseAdmin
+      .from('Domain')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
 
     return NextResponse.json({ message: 'Domínio removido' })
   } catch (error) {
-    console.error('Delete domain error:', error)
+    console.error('❌ Erro ao remover domínio:', error)
     return NextResponse.json({ error: 'Erro ao remover domínio' }, { status: 500 })
   }
 }
@@ -36,7 +45,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const session = await auth()
-  if (!session?.user?.id) {
+  const userId = session?.user?.id
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -44,22 +54,29 @@ export async function PATCH(
   const { verified } = await request.json()
 
   try {
-    const domain = await prisma.domain.findFirst({
-      where: { id, userId: session.user.id },
-    })
+    const { data: domain } = await supabaseAdmin
+      .from('Domain')
+      .select('id')
+      .eq('id', id)
+      .eq('userId', userId)
+      .single()
 
     if (!domain) {
       return NextResponse.json({ error: 'Domínio não encontrado' }, { status: 404 })
     }
 
-    const updated = await prisma.domain.update({
-      where: { id },
-      data: { verified },
-    })
+    const { data: updated, error } = await supabaseAdmin
+      .from('Domain')
+      .update({ verified, updatedAt: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
 
     return NextResponse.json({ domain: updated })
   } catch (error) {
-    console.error('Update domain error:', error)
+    console.error('❌ Erro ao atualizar domínio:', error)
     return NextResponse.json({ error: 'Erro ao atualizar domínio' }, { status: 500 })
   }
 }

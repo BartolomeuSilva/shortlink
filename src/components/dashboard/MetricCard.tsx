@@ -1,23 +1,37 @@
+'use client'
+
 interface MetricCardProps {
+  icon: React.ReactNode
   label: string
   value: string
-  delta?: string
-  deltaType?: 'up' | 'down' | 'neutral'
-  deltaLabel?: string
+  sub?: string
+  subType?: 'positive' | 'negative' | 'neutral'
+  accentColor?: string
 }
 
-export function MetricCard({ label, value, delta, deltaType = 'neutral', deltaLabel }: MetricCardProps) {
+export function MetricCard({ icon, label, value, sub, subType = 'neutral', accentColor }: MetricCardProps) {
   return (
-    <div className="metric-card">
-      <div className="metric-label">{label}</div>
-      <div className="metric-value">{value}</div>
-      {delta && (
-        <div className={`metric-delta ${deltaType}`}>
-          <span className="metric-delta-dot" />
-          <span>{delta}</span>
-          {deltaLabel && <span style={{ fontWeight: 300 }}>{deltaLabel}</span>}
-        </div>
-      )}
+    <div className="dash-metric" style={accentColor ? { '--metric-accent': accentColor } as React.CSSProperties : undefined}>
+      <div className="dash-metric-top">
+        <div className="dash-metric-icon">{icon}</div>
+        {sub && (
+          <span className={`dash-metric-badge ${subType}`}>
+            {subType === 'positive' && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+            )}
+            {subType === 'negative' && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
+            {sub}
+          </span>
+        )}
+      </div>
+      <div className="dash-metric-value">{value}</div>
+      <div className="dash-metric-label">{label}</div>
     </div>
   )
 }

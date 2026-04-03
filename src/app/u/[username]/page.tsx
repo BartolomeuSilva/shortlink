@@ -1,14 +1,16 @@
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { notFound, redirect } from 'next/navigation'
 
 interface Props { params: Promise<{ username: string }> }
 
 export async function generateMetadata({ params }: Props) {
   const { username } = await params
-  const bio = await prisma.bioPage.findFirst({
-    where: { slug: username },
-    select: { title: true, bio: true },
-  })
+  const { data: bio } = await supabaseAdmin
+    .from('BioPage')
+    .select('title, bio')
+    .eq('slug', username)
+    .maybeSingle()
+
   return {
     title: bio?.title || `@${username} | 123bit`,
     description: bio?.bio || undefined,
@@ -18,10 +20,12 @@ export async function generateMetadata({ params }: Props) {
 export default async function BioPublicPage({ params }: Props) {
   const { username } = await params
 
-  const bio = await prisma.bioPage.findFirst({
-    where: { slug: username, published: true },
-    select: { slug: true },
-  })
+  const { data: bio } = await supabaseAdmin
+    .from('BioPage')
+    .select('slug')
+    .eq('slug', username)
+    .eq('published', true)
+    .maybeSingle()
 
   if (!bio) notFound()
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
+import { nanoid } from 'nanoid'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -10,26 +11,39 @@ const schema = z.object({
   androidStoreUrl: z.string().url().optional().or(z.literal('')),
 })
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const domain = await prisma.domain.findFirst({
-    where: { id: params.id, userId: session.user.id },
-    include: { deepLinkConfig: true },
-  })
+  const { data: domain } = await supabaseAdmin
+    .from('Domain')
+    .select('id')
+    .eq('id', params.id)
+    .eq('userId', session.user.id)
+    .single()
+
   if (!domain) return NextResponse.json({ error: 'Domínio não encontrado' }, { status: 404 })
 
-  return NextResponse.json({ deepLinkConfig: domain.deepLinkConfig })
+  const { data: deepLinkConfig } = await supabaseAdmin
+    .from('DeepLinkConfig')
+    .select('*')
+    .eq('domainId', params.id)
+    .single()
+
+  return NextResponse.json({ deepLinkConfig })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const domain = await prisma.domain.findFirst({
-    where: { id: params.id, userId: session.user.id },
-  })
+  const { data: domain } = await supabaseAdmin
+    .from('Domain')
+    .select('id')
+    .eq('id', params.id)
+    .eq('userId', session.user.id)
+    .single()
+
   if (!domain) return NextResponse.json({ error: 'Domínio não encontrado' }, { status: 404 })
 
   const body = await req.json()
@@ -41,13 +55,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     androidPackage:  parsed.data.androidPackage  || null,
     iosStoreUrl:     parsed.data.iosStoreUrl     || null,
     androidStoreUrl: parsed.data.androidStoreUrl || null,
+    updatedAt:       new Date().toISOString(),
   }
 
-  const config = await prisma.deepLinkConfig.upsert({
-    where: { domainId: params.id },
-    create: { domainId: params.id, ...data },
-    update: data,
-  })
+  const { data: existing } = await supabaseAdmin
+    .from('DeepLinkConfig')
+    .select('id')
+    .eq('domainId', params.id)
+    .single()
 
-  return NextResponse.json({ deepLinkConfig: config })
+  let deepLinkConfig
+  if (existing) {
+    const { data: updated } = await supabaseAdmin.from('DeepLinkConfig').update(data).eq('domainId', params.id).select().single()
+    deepLinkConfig = updated
+  } else {
+    const { data: created } = await supabaseAdmin.from('DeepLinkConfig').insert({ id: nanoid(), domainId: params.id, ...data, createdAt: new Date().toISOString() }).select().single()
+    deepLinkConfig = created
+  }
+
+  return NextResponse.json({ deepLinkConfig })
 }

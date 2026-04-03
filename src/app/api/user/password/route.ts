@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { z } from 'zod'
 
 const changePasswordSchema = z.object({
@@ -10,52 +10,33 @@ const changePasswordSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const session = await auth()
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const body = await request.json()
     const result = changePasswordSchema.safeParse(body)
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.errors[0].message },
-        { status: 400 }
-      )
-    }
+    if (!result.success) return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 })
 
     const { currentPassword, newPassword } = result.data
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { password: true },
-    })
+    const { data: user } = await supabaseAdmin
+      .from('User')
+      .select('password')
+      .eq('id', session.user.id)
+      .single()
 
-    if (!user?.password) {
-      return NextResponse.json(
-        { error: 'Você não tem uma senha definida' },
-        { status: 400 }
-      )
-    }
+    if (!user?.password) return NextResponse.json({ error: 'Você não tem uma senha definida' }, { status: 400 })
 
     const bcrypt = await import('bcryptjs')
     const isValid = await bcrypt.compare(currentPassword, user.password)
-
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Senha atual incorreta' },
-        { status: 401 }
-      )
-    }
+    if (!isValid) return NextResponse.json({ error: 'Senha atual incorreta' }, { status: 401 })
 
     const hashedPassword = await bcrypt.hash(newPassword, 12)
 
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { password: hashedPassword },
-    })
+    await supabaseAdmin
+      .from('User')
+      .update({ password: hashedPassword, updatedAt: new Date().toISOString() })
+      .eq('id', session.user.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

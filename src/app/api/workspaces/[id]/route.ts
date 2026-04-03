@@ -1,50 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
+import { nanoid } from 'nanoid'
 import { z } from 'zod'
 
 async function requireMember(wsId: string, userId: string, minRole?: string) {
-  const member = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: wsId, userId } },
-  })
+  const { data: member } = await supabaseAdmin
+    .from('WorkspaceMember')
+    .select('role')
+    .eq('workspaceId', wsId)
+    .eq('userId', userId)
+    .single()
+
   if (!member) return null
   if (minRole === 'OWNER' && member.role !== 'OWNER') return null
   if (minRole === 'ADMIN' && !['OWNER', 'ADMIN'].includes(member.role)) return null
   return member
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const member = await requireMember(params.id, session.user.id)
   if (!member) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: params.id },
-    include: {
-      members: {
-        include: { user: { select: { id: true, name: true, email: true, image: true } } },
-        orderBy: { joinedAt: 'asc' },
-      },
-    },
-  })
+  const { data: workspace } = await supabaseAdmin
+    .from('Workspace')
+    .select(`
+      *,
+      members:WorkspaceMember(
+        role, joinedAt,
+        user:User(id, name, email, image)
+      )
+    `)
+    .eq('id', params.id)
+    .single()
 
   return NextResponse.json({ workspace, currentRole: member.role })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const member = await requireMember(params.id, session.user.id, 'OWNER')
   if (!member) return NextResponse.json({ error: 'Apenas o owner pode deletar o workspace' }, { status: 403 })
 
-  await prisma.workspace.delete({ where: { id: params.id } })
+  await supabaseAdmin.from('Workspace').delete().eq('id', params.id)
   return NextResponse.json({ success: true })
 }
 
-// Invite member
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -53,30 +59,36 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!member) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
 
   const { email, role } = await req.json()
-  const schema = z.object({
-    email: z.string().email(),
-    role:  z.enum(['ADMIN', 'EDITOR', 'VIEWER']),
-  })
+  const schema = z.object({ email: z.string().email(), role: z.enum(['ADMIN', 'EDITOR', 'VIEWER']) })
   const parsed = schema.safeParse({ email, role })
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } })
+  const { data: user } = await supabaseAdmin
+    .from('User')
+    .select('id, name, email, image')
+    .eq('email', parsed.data.email)
+    .single()
+
   if (!user) return NextResponse.json({ error: 'Usuário não encontrado com este email' }, { status: 404 })
 
-  const existing = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: params.id, userId: user.id } },
-  })
+  const { data: existing } = await supabaseAdmin
+    .from('WorkspaceMember')
+    .select('id')
+    .eq('workspaceId', params.id)
+    .eq('userId', user.id)
+    .single()
+
   if (existing) return NextResponse.json({ error: 'Usuário já é membro deste workspace' }, { status: 409 })
 
-  const newMember = await prisma.workspaceMember.create({
-    data: { workspaceId: params.id, userId: user.id, role: parsed.data.role },
-    include: { user: { select: { id: true, name: true, email: true, image: true } } },
-  })
+  const { data: newMember } = await supabaseAdmin
+    .from('WorkspaceMember')
+    .insert({ id: nanoid(), workspaceId: params.id, userId: user.id, role: parsed.data.role, joinedAt: new Date().toISOString() })
+    .select('role, joinedAt, user:User(id, name, email, image)')
+    .single()
 
   return NextResponse.json({ member: newMember }, { status: 201 })
 }
 
-// Remove member / update role
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -87,9 +99,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const member = await requireMember(params.id, session.user.id, 'ADMIN')
     if (!member) return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 })
 
-    await prisma.workspaceMember.deleteMany({
-      where: { workspaceId: params.id, userId: body.userId, role: { not: 'OWNER' } },
-    })
+    await supabaseAdmin
+      .from('WorkspaceMember')
+      .delete()
+      .eq('workspaceId', params.id)
+      .eq('userId', body.userId)
+      .neq('role', 'OWNER')
     return NextResponse.json({ success: true })
   }
 
@@ -97,10 +112,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const member = await requireMember(params.id, session.user.id, 'OWNER')
     if (!member) return NextResponse.json({ error: 'Apenas o owner pode alterar roles' }, { status: 403 })
 
-    await prisma.workspaceMember.updateMany({
-      where: { workspaceId: params.id, userId: body.userId },
-      data: { role: body.role },
-    })
+    await supabaseAdmin
+      .from('WorkspaceMember')
+      .update({ role: body.role })
+      .eq('workspaceId', params.id)
+      .eq('userId', body.userId)
     return NextResponse.json({ success: true })
   }
 

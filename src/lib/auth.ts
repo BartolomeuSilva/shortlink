@@ -1,12 +1,12 @@
 import NextAuth from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
+import { SupabaseAdapter } from '@auth/supabase-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
 import FacebookProvider from 'next-auth/providers/facebook'
 import AppleProvider from 'next-auth/providers/apple'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { prisma } from './db'
+import { supabaseAdmin } from './supabase'
 import { customAlphabet } from 'nanoid'
 
 const generateApiKey = customAlphabet(
@@ -15,7 +15,10 @@ const generateApiKey = customAlphabet(
 )
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: SupabaseAdapter({
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  }),
   providers: [
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID!,
@@ -24,14 +27,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GitHubProvider({
       clientId: process.env.AUTH_GITHUB_ID!,
       clientSecret: process.env.AUTH_GITHUB_SECRET!,
-    }),
-    FacebookProvider({
-      clientId: process.env.AUTH_FACEBOOK_ID || '',
-      clientSecret: process.env.AUTH_FACEBOOK_SECRET || '',
-    }),
-    AppleProvider({
-      clientId: process.env.AUTH_APPLE_ID || '',
-      clientSecret: process.env.AUTH_APPLE_SECRET || '',
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -47,9 +42,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials.email as string
         const password = credentials.password as string
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        })
+        const { data: user } = await supabaseAdmin
+          .from('User')
+          .select('*')
+          .eq('email', email)
+          .single()
 
         if (!user || !user.password) {
           return null
@@ -84,17 +81,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
     async signIn({ user, account }) {
-      // Auto-generate apiKey for new users on OAuth sign-in
       if (account?.provider !== 'credentials' && user.id) {
-        const existing = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { apiKey: true },
-        })
+        const { data: existing } = await supabaseAdmin
+          .from('User')
+          .select('apiKey')
+          .eq('id', user.id)
+          .single()
+
         if (existing && !existing.apiKey) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { apiKey: generateApiKey() },
-          })
+          await supabaseAdmin
+            .from('User')
+            .update({ apiKey: generateApiKey() })
+            .eq('id', user.id)
         }
       }
       return true

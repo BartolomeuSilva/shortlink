@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-
-// POST   — add a link to the campaign    { linkId }
-// DELETE — remove a link from campaign   { linkId }
+import { supabaseAdmin } from '@/lib/supabase'
 
 async function requireCampaignOwner(campaignId: string, userId: string) {
-  return prisma.campaign.findFirst({ where: { id: campaignId, userId } })
+  const { data } = await supabaseAdmin
+    .from('Campaign')
+    .select('id')
+    .eq('id', campaignId)
+    .eq('userId', userId)
+    .single()
+  return data
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -19,22 +22,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { linkId } = await req.json()
   if (!linkId) return NextResponse.json({ error: 'linkId obrigatório' }, { status: 400 })
 
-  // Make sure the link belongs to this user
-  const link = await prisma.link.findFirst({
-    where: { id: linkId, userId: session.user.id },
-  })
+  const { data: link } = await supabaseAdmin
+    .from('Link')
+    .select('id')
+    .eq('id', linkId)
+    .eq('userId', session.user.id)
+    .single()
+
   if (!link) return NextResponse.json({ error: 'Link não encontrado' }, { status: 404 })
 
-  const updated = await prisma.link.update({
-    where: { id: linkId },
-    data: { campaignId: params.id },
-    select: {
-      id: true, shortCode: true, title: true, originalUrl: true,
-      clickCount: true, createdAt: true, isActive: true,
-      utmSource: true, utmMedium: true,
-    },
-  })
+  const { data: updated, error } = await supabaseAdmin
+    .from('Link')
+    .update({ campaignId: params.id, updatedAt: new Date().toISOString() })
+    .eq('id', linkId)
+    .select('id, shortCode, title, originalUrl, clickCount, createdAt, isActive, utmSource, utmMedium')
+    .single()
 
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ link: updated })
 }
 
@@ -48,10 +52,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const { linkId } = await req.json()
   if (!linkId) return NextResponse.json({ error: 'linkId obrigatório' }, { status: 400 })
 
-  await prisma.link.updateMany({
-    where: { id: linkId, userId: session.user.id, campaignId: params.id },
-    data: { campaignId: null },
-  })
+  await supabaseAdmin
+    .from('Link')
+    .update({ campaignId: null, updatedAt: new Date().toISOString() })
+    .eq('id', linkId)
+    .eq('userId', session.user.id)
+    .eq('campaignId', params.id)
 
   return NextResponse.json({ success: true })
 }

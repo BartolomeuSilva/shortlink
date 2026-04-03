@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import BioPageClient from './BioPageClient'
 
@@ -6,10 +6,12 @@ interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
-  const bio = await prisma.bioPage.findFirst({
-    where: { slug },
-    select: { title: true, bio: true },
-  })
+  const { data: bio } = await supabaseAdmin
+    .from('BioPage')
+    .select('title, bio')
+    .eq('slug', slug)
+    .maybeSingle()
+
   return {
     title: bio?.title || `@${slug} | 123bit`,
     description: bio?.bio || undefined,
@@ -19,12 +21,14 @@ export async function generateMetadata({ params }: Props) {
 export default async function BioPublicPage({ params }: Props) {
   const { slug } = await params
 
-  const bio = await prisma.bioPage.findFirst({
-    where: { slug, published: true },
-    include: {
-      items: { where: { active: true }, orderBy: { order: 'asc' } },
-    },
-  })
+  const { data: bio } = await supabaseAdmin
+    .from('BioPage')
+    .select('*, items:BioPageItem(*)')
+    .eq('slug', slug)
+    .eq('published', true)
+    .eq('items.active', true)
+    .order('order', { foreignTable: 'items', ascending: true })
+    .maybeSingle()
 
   if (!bio) notFound()
 
@@ -34,7 +38,7 @@ export default async function BioPublicPage({ params }: Props) {
     bio: bio.bio,
     theme: bio.theme,
     accentColor: bio.accentColor,
-    items: bio.items.map(item => ({
+    items: bio.items.map((item: any) => ({
       id: item.id,
       label: item.label,
       url: item.url,

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import { customAlphabet } from 'nanoid'
+import { customAlphabet, nanoid } from 'nanoid'
 
 const generateApiKey = customAlphabet(
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
@@ -29,9 +29,12 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password } = result.data
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+    // 1. Verificar se usuário já existe via Supabase
+    const { data: existingUser } = await supabaseAdmin
+      .from('User')
+      .select('id')
+      .eq('email', email)
+      .single()
 
     if (existingUser) {
       return NextResponse.json(
@@ -41,29 +44,36 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
+    const now = new Date().toISOString()
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        plan: 'FREE',
-        apiKey: generateApiKey(),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        plan: true,
-        createdAt: true,
-      },
-    })
+    // 2. Criar usuário no Supabase gerando os campos obrigatórios manualmente
+    const { data: user, error: createError } = await supabaseAdmin
+      .from('User')
+      .insert([
+        {
+          id: nanoid(),
+          name,
+          email,
+          password: hashedPassword,
+          plan: 'FREE',
+          apiKey: generateApiKey(),
+          createdAt: now,
+          updatedAt: now,
+        }
+      ])
+      .select('id, name, email, plan, createdAt')
+      .single()
+
+    if (createError) {
+      console.error('❌ Supabase Insertion Error:', createError)
+      throw new Error(createError.message)
+    }
 
     return NextResponse.json({ user }, { status: 201 })
-  } catch (error) {
-    console.error('Registration error:', error)
+  } catch (error: any) {
+    console.error('❌ Erro Crítico no Registro:', error)
     return NextResponse.json(
-      { error: 'Erro ao criar conta' },
+      { error: 'Erro ao criar conta. Verifique a conexão com o Supabase.' },
       { status: 500 }
     )
   }

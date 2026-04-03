@@ -108,9 +108,7 @@ export default function WorkspacesPage() {
           </div>
         )}
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)' }}>Carregando...</div>
-        ) : workspaces.length === 0 ? (
+        {workspaces.length === 0 && !loading ? (
           <div className="card" style={{ padding: '48px', textAlign: 'center' }}>
             <div style={{
               width: '52px', height: '52px', borderRadius: '14px', margin: '0 auto 16px',

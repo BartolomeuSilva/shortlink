@@ -1,51 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { z } from 'zod'
+import { supabaseAdmin } from '@/lib/supabase'
+import { nanoid } from 'nanoid'
 
-const schema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-})
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  const campaigns = await prisma.campaign.findMany({
-    where: { userId: session.user.id },
-    include: {
-      _count: { select: { links: true } },
-      links: {
-        select: { clickCount: true },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
+  const { searchParams } = new URL(request.url)
+  const workspaceId = searchParams.get('workspaceId')
+
+  // Buscar campanhas com contagem de links e cliques filtradas por espaço
+  let query = supabaseAdmin
+    .from('Campaign')
+    .select(`
+      *,
+      links:Link(id, clickCount)
+    `)
+
+  if (workspaceId) {
+    // Verificar se o usuário é membro do workspace
+    const { data: member } = await supabaseAdmin
+      .from('WorkspaceMember')
+      .select('id')
+      .eq('workspaceId', workspaceId)
+      .eq('userId', session.user.id)
+      .single()
+    
+    if (!member) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+    query = query.eq('workspaceId', workspaceId)
+  } else {
+    query = query.eq('userId', session.user.id).is('workspaceId', null)
+  }
+
+  const { data: campaigns, error } = await query.order('createdAt', { ascending: false })
+
+  if (error) {
+    console.error('❌ Erro ao buscar campanhas:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  const formattedCampaigns = campaigns.map(c => {
+    const links = c.links || []
+    return {
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      createdAt: c.createdAt,
+      linkCount: links.length,
+      totalClicks: links.reduce((acc: number, curr: any) => acc + (curr.clickCount || 0), 0)
+    }
   })
 
-  const data = campaigns.map(c => ({
-    id: c.id,
-    name: c.name,
-    description: c.description,
-    createdAt: c.createdAt,
-    linkCount: c._count.links,
-    totalClicks: c.links.reduce((s, l) => s + l.clickCount, 0),
-  }))
-
-  return NextResponse.json({ campaigns: data })
+  return NextResponse.json({ campaigns: formattedCampaigns })
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  const body = await req.json()
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+  try {
+    const { name, description, workspaceId } = await request.json()
+    if (!name) {
+      return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+    }
 
-  const campaign = await prisma.campaign.create({
-    data: { userId: session.user.id, name: parsed.data.name, description: parsed.data.description || null },
-  })
+    const now = new Date().toISOString()
+    const { data: campaign, error } = await supabaseAdmin
+      .from('Campaign')
+      .insert([
+        {
+          id: nanoid(),
+          userId: session.user.id,
+          workspaceId: workspaceId || null,
+          name,
+          description,
+          createdAt: now,
+          updatedAt: now,
+        }
+      ])
+      .select()
+      .single()
 
-  return NextResponse.json({ campaign }, { status: 201 })
+    if (error) throw error
+
+    return NextResponse.json({ campaign }, { status: 201 })
+  } catch (error: any) {
+    console.error('❌ Erro ao criar campanha:', error)
+    return NextResponse.json({ error: 'Erro ao criar campanha' }, { status: 500 })
+  }
 }

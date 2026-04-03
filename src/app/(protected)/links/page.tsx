@@ -1,51 +1,49 @@
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { Prisma } from '@prisma/client'
+import { supabaseAdmin } from '@/lib/supabase'
 import { LinkTable } from '@/components/links/LinkTable'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-async function getLinks(userId: string, page: number, search: string) {
+async function getLinks(userId: string, page: number, search: string, workspaceId?: string) {
   const limit = 20
   const skip = (page - 1) * limit
 
-  const where: Prisma.LinkWhereInput = search
-    ? {
-        userId,
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { originalUrl: { contains: search, mode: 'insensitive' } },
-          { shortCode: { contains: search, mode: 'insensitive' } },
-        ],
-      }
-    : { userId }
+  let query = supabaseAdmin
+    .from('Link')
+    .select('*, qrConfig:QRConfig(id)', { count: 'exact' })
 
-  const [links, total] = await Promise.all([
-    prisma.link.findMany({
-      where,
-      include: {
-        tags: true,
-        _count: { select: { clicks: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.link.count({ where }),
-  ])
+  if (workspaceId) {
+    query = query.eq('workspaceId', workspaceId)
+  } else {
+    query = query.eq('userId', userId).is('workspaceId', null)
+  }
+
+  if (search) {
+    query = query.or(`title.ilike.%${search}%,originalUrl.ilike.%${search}%,shortCode.ilike.%${search}%`)
+  }
+
+  const { data: links, count: total, error } = await query
+    .order('createdAt', { ascending: false })
+    .range(skip, skip + limit - 1)
+
+  if (error) {
+    console.error('Fetch links error:', error)
+    return { links: [], total: 0, page, pageSize: limit }
+  }
 
   return {
-    links: links.map((l) => ({
+    links: links?.map((l: any) => ({
       id: l.id,
       shortCode: l.shortCode,
       originalUrl: l.originalUrl,
       title: l.title,
       isActive: l.isActive,
-      clickCount: l._count.clicks,
-      expiresAt: l.expiresAt?.toISOString() || null,
-      createdAt: l.createdAt.toISOString(),
-      tags: l.tags.map((t) => ({ id: t.id, name: t.name, color: t.color })),
-    })),
-    total,
+      clickCount: l.clickCount || 0,
+      hasQr: !!l.qrConfig && (Array.isArray(l.qrConfig) ? l.qrConfig.length > 0 : true),
+      expiresAt: l.expiresAt ? new Date(l.expiresAt).toISOString() : null,
+      createdAt: new Date(l.createdAt).toISOString(),
+      tags: [], // Tags desativadas por enquanto devido ao erro PGRST200
+    })) || [],
+    total: total || 0,
     page,
     pageSize: limit,
   }
@@ -54,7 +52,7 @@ async function getLinks(userId: string, page: number, search: string) {
 export default async function LinksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string }>
+  searchParams: Promise<{ page?: string; search?: string; workspaceId?: string }>
 }) {
   const session = await auth()
   if (!session?.user?.id) return null
@@ -62,15 +60,14 @@ export default async function LinksPage({
   const params = await searchParams
   const page = parseInt(params.page || '1')
   const search = params.search || ''
+  const workspaceId = params.workspaceId
 
-  const data = await getLinks(session.user.id, page, search)
+  const data = await getLinks(session.user.id, page, search, workspaceId)
 
   return (
     <>
       <PageHeader title="Meus Links" subtitle="Gerencie seus links curtos" />
-      <div className="page-content">
-        <LinkTable {...data} />
-      </div>
+      <LinkTable {...data} />
     </>
   )
 }

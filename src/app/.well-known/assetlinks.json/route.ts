@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { headers } from 'next/headers'
 
 export async function GET() {
@@ -10,34 +10,28 @@ export async function GET() {
   let packages: string[] = []
 
   if (isCustomDomain) {
-    const domain = await prisma.domain.findFirst({
-      where: { domain: host, verified: true },
-      include: { deepLinkConfig: true },
-    })
-    if (domain?.deepLinkConfig?.androidPackage) {
-      packages = [domain.deepLinkConfig.androidPackage]
-    }
+    const { data: domain } = await supabaseAdmin
+      .from('Domain')
+      .select('id, DeepLinkConfig(androidPackage)')
+      .eq('domain', host)
+      .eq('verified', true)
+      .single()
+    const pkg = (domain as any)?.DeepLinkConfig?.androidPackage
+    if (pkg) packages = [pkg]
   } else {
-    const configs = await prisma.deepLinkConfig.findMany({
-      where: { androidPackage: { not: null } },
-      select: { androidPackage: true },
-    })
-    packages = configs.map(c => c.androidPackage!).filter(Boolean)
+    const { data: configs } = await supabaseAdmin
+      .from('DeepLinkConfig')
+      .select('androidPackage')
+      .not('androidPackage', 'is', null)
+    packages = (configs || []).map((c: any) => c.androidPackage).filter(Boolean)
   }
 
   const json = packages.map(pkg => ({
     relation: ['delegate_permission/common.handle_all_urls'],
-    target: {
-      namespace: 'android_app',
-      package_name: pkg,
-      sha256_cert_fingerprints: [],
-    },
+    target: { namespace: 'android_app', package_name: pkg, sha256_cert_fingerprints: [] },
   }))
 
   return new NextResponse(JSON.stringify(json), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=3600',
-    },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
   })
 }

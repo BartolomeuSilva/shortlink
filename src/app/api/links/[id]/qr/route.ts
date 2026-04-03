@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { getBaseUrl } from '@/lib/utils'
 import QRCode from 'qrcode'
 
@@ -13,16 +13,18 @@ export async function GET(
   const format = searchParams.get('format') || 'svg'
   const size = Math.min(parseInt(searchParams.get('size') || '300'), 1000)
 
-  const link = await prisma.link.findFirst({
-    where: { OR: [{ id }, { shortCode: id }] },
-    select: {
-      shortCode: true,
-      customDomain: true,
-      qrConfig: true,
-    },
-  })
+  // Buscar link no Supabase buscando por ID ou shortCode
+  const { data: link, error } = await supabaseAdmin
+    .from('Link')
+    .select(`
+      shortCode,
+      customDomain,
+      qrConfig:QRConfig(*)
+    `)
+    .or(`id.eq.${id},shortCode.eq.${id}`)
+    .single()
 
-  if (!link) {
+  if (error || !link) {
     return NextResponse.json({ error: 'Link não encontrado' }, { status: 404 })
   }
 
@@ -30,9 +32,12 @@ export async function GET(
     ? `https://${link.customDomain}/${link.shortCode}`
     : `${getBaseUrl()}/${link.shortCode}`
 
-  const fg = link.qrConfig?.fgColor || '#000000'
-  const bg = link.qrConfig?.bgColor || '#FFFFFF'
-  const errLevel = (link.qrConfig?.errorLevel || 'M') as 'L' | 'M' | 'Q' | 'H'
+  // Tratar qrConfig que pode vir como array ou objeto único dependendo da relação
+  const qrConfig = Array.isArray(link.qrConfig) ? link.qrConfig[0] : link.qrConfig
+  
+  const fg = qrConfig?.fgColor || '#000000'
+  const bg = qrConfig?.bgColor || '#FFFFFF'
+  const errLevel = (qrConfig?.errorLevel || 'M') as 'L' | 'M' | 'Q' | 'H'
 
   try {
     if (format === 'svg') {
@@ -60,7 +65,7 @@ export async function GET(
       headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
     })
   } catch (error) {
-    console.error('QR Code error:', error)
+    console.error('❌ Erro ao gerar QR Code:', error)
     return NextResponse.json({ error: 'Erro ao gerar QR Code' }, { status: 500 })
   }
 }

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar, TopbarProvider } from './Topbar'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { MobileNav } from './MobileNav'
 import Link from 'next/link'
 
 interface LayoutShellProps {
@@ -62,6 +63,7 @@ export function LayoutShell({ user, children }: LayoutShellProps) {
         <main className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`}>
           {children}
         </main>
+        <MobileNav />
       </TopbarProvider>
     </div>
   )

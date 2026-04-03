@@ -181,11 +181,7 @@ export default function ApiKeysPage() {
         </div>
 
         {/* Keys list */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-tertiary)', fontSize: '14px' }}>
-            Carregando chaves...
-          </div>
-        ) : keys.length === 0 ? (
+        {keys.length === 0 && !loading ? (
           <div className="card" style={{ padding: '48px 24px', textAlign: 'center' }}>
             <div style={{
               width: '48px', height: '48px', borderRadius: '12px', margin: '0 auto 16px',

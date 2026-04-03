@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { z } from 'zod'
+import { nanoid } from 'nanoid'
 
 const domainSchema = z.object({
   domain: z.string().min(1, 'Domínio é obrigatório').regex(/^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}$/, 'Domínio inválido'),
@@ -13,10 +14,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const domains = await prisma.domain.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: 'desc' },
-  })
+  const { data: domains, error } = await supabaseAdmin
+    .from('Domain')
+    .select('*')
+    .eq('userId', session.user.id)
+    .order('createdAt', { ascending: false })
+
+  if (error) {
+    console.error('Fetch domains error:', error)
+    return NextResponse.json({ error: 'Erro ao buscar domínios' }, { status: 500 })
+  }
 
   return NextResponse.json({ domains })
 }
@@ -40,9 +47,11 @@ export async function POST(request: NextRequest) {
 
     const { domain } = result.data
 
-    const existing = await prisma.domain.findUnique({
-      where: { domain },
-    })
+    const { data: existing } = await supabaseAdmin
+      .from('Domain')
+      .select('id')
+      .eq('domain', domain)
+      .maybeSingle()
 
     if (existing) {
       return NextResponse.json(
@@ -52,15 +61,25 @@ export async function POST(request: NextRequest) {
     }
 
     const txtRecord = `verify-${Date.now()}-${Math.random().toString(36).substring(7)}`
+    const now = new Date().toISOString()
 
-    const newDomain = await prisma.domain.create({
-      data: {
+    const { data: newDomain, error: createError } = await supabaseAdmin
+      .from('Domain')
+      .insert({
+        id: nanoid(),
         domain,
         userId: session.user.id,
         txtRecord,
         verified: false,
-      },
-    })
+        createdAt: now,
+        updatedAt: now,
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      throw createError
+    }
 
     return NextResponse.json({
       domain: newDomain,

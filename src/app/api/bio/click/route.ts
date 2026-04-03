@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
+import { nanoid } from 'nanoid'
 
 function parseUserAgent(ua: string | null): { device: string; browser: string; os: string } {
   if (!ua) return { device: 'Unknown', browser: 'Unknown', os: 'Unknown' }
@@ -29,44 +30,41 @@ export async function POST(req: NextRequest) {
     const { itemId } = await req.json()
     if (!itemId) return NextResponse.json({ error: 'itemId required' }, { status: 400 })
 
-    const item = await prisma.bioPageItem.findUnique({
-      where: { id: itemId },
-      select: { bioPageId: true },
-    })
+    const { data: item } = await supabaseAdmin
+      .from('BioPageItem')
+      .select('bioPageId, clicks')
+      .eq('id', itemId)
+      .single()
 
     if (!item) return NextResponse.json({ error: 'Item not found' }, { status: 404 })
 
+    const { data: page } = await supabaseAdmin
+      .from('BioPage')
+      .select('clicksTotal')
+      .eq('id', item.bioPageId)
+      .single()
+
     const ua = req.headers.get('user-agent') || ''
     const { device, browser, os } = parseUserAgent(ua)
-
-    // Try to extract geo from headers (if behind a proxy/CDN)
-    const country = req.headers.get('x-vercel-ip-country') || req.headers.get('cf-ipcountry') || null
-    const city = req.headers.get('x-vercel-ip-city') || req.headers.get('cf-ipcity') || null
-    const region = req.headers.get('x-vercel-ip-region') || req.headers.get('cf-region') || null
+    const country  = req.headers.get('x-vercel-ip-country') || req.headers.get('cf-ipcountry') || null
+    const city     = req.headers.get('x-vercel-ip-city')    || req.headers.get('cf-ipcity')    || null
+    const region   = req.headers.get('x-vercel-ip-region')  || req.headers.get('cf-region')    || null
     const referrer = req.headers.get('referer') || null
+    const now = new Date().toISOString()
 
-    await prisma.$transaction([
-      prisma.bioPageItem.update({
-        where: { id: itemId },
-        data: { clicks: { increment: 1 } },
-      }),
-      prisma.bioPage.update({
-        where: { id: item.bioPageId },
-        data: { clicksTotal: { increment: 1 } },
-      }),
-      prisma.bioPageClick.create({
-        data: {
-          bioPageId: item.bioPageId,
-          itemId,
-          country,
-          city,
-          region,
-          device,
-          browser,
-          os,
-          referrer,
-          userAgent: ua,
-        },
+    await Promise.all([
+      supabaseAdmin
+        .from('BioPageItem')
+        .update({ clicks: (item.clicks || 0) + 1 })
+        .eq('id', itemId),
+      supabaseAdmin
+        .from('BioPage')
+        .update({ clicksTotal: (page?.clicksTotal || 0) + 1 })
+        .eq('id', item.bioPageId),
+      supabaseAdmin.from('BioPageClick').insert({
+        id: nanoid(), bioPageId: item.bioPageId, itemId,
+        country, city, region, device, browser, os, referrer,
+        userAgent: ua, timestamp: now,
       }),
     ])
 

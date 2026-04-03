@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { customAlphabet } from 'nanoid'
+import { supabaseAdmin } from '@/lib/supabase'
+import { customAlphabet, nanoid } from 'nanoid'
 import { z } from 'zod'
 
-const generateApiKey = customAlphabet(
+const generateApiKeyString = customAlphabet(
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   32
 )
@@ -21,22 +21,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const apiKeys = await prisma.apiKey.findMany({
-    where: {
-      userId: session.user.id,
-      revokedAt: null,
-    },
-    select: {
-      id: true,
-      name: true,
-      lastUsedAt: true,
-      expiresAt: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  try {
+    const { data: apiKeys, error } = await supabaseAdmin
+      .from('ApiKey')
+      .select('id, name, lastUsedAt, expiresAt, createdAt')
+      .eq('userId', session.user.id)
+      .is('revokedAt', null)
+      .order('createdAt', { ascending: false })
 
-  return NextResponse.json({ keys: apiKeys.map(k => ({ id: k.id, name: k.name, lastUsedAt: k.lastUsedAt, expiresAt: k.expiresAt, createdAt: k.createdAt, revokedAt: null })) })
+    if (error) throw error
+
+    return NextResponse.json({ keys: apiKeys || [] })
+  } catch (err: any) {
+    console.error('❌ Erro ao buscar API keys:', err)
+    return NextResponse.json({ error: 'Erro ao carregar API keys' }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -59,18 +58,27 @@ export async function POST(request: NextRequest) {
 
     const { name, expiresAt } = result.data
 
-    const key = generateApiKey()
+    const key = generateApiKeyString()
     const bcrypt = await import('bcryptjs')
     const keyHash = await bcrypt.hash(key, 10)
 
-    const apiKey = await prisma.apiKey.create({
-      data: {
-        userId: session.user.id,
-        name,
-        keyHash,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-      },
-    })
+    const now = new Date().toISOString()
+    const { data: apiKey, error: createError } = await supabaseAdmin
+      .from('ApiKey')
+      .insert([
+        {
+          id: nanoid(),
+          userId: session.user.id,
+          name,
+          keyHash,
+          expiresAt: expiresAt || null,
+          createdAt: now
+        }
+      ])
+      .select()
+      .single()
+
+    if (createError) throw createError
 
     return NextResponse.json({
       key: key,
@@ -82,7 +90,7 @@ export async function POST(request: NextRequest) {
       },
     }, { status: 201 })
   } catch (error) {
-    console.error('API key creation error:', error)
+    console.error('❌ Erro ao criar API key:', error)
     return NextResponse.json({ error: 'Erro ao criar API key' }, { status: 500 })
   }
 }

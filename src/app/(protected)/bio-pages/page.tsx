@@ -21,12 +21,15 @@ export default function BioPagesList() {
   const [bios, setBios] = useState<BioSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, slug: string } | null>(null)
+  
   const router = useRouter()
   const topbar = useTopbar()
 
   useEffect(() => {
     topbar.setTitle('Minhas Bios')
-    topbar.setSubtitle('Gerencie suas páginas link-in-bio')
+    topbar.setSubtitle('Gerencie todas as suas páginas link-in-bio')
     topbar.setActions(
       <Link href="/bio-pages/new" className="btn btn-primary">
         <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
@@ -45,134 +48,152 @@ export default function BioPagesList() {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza? Todos os links e métricas serão excluídos permanentemente.')) return
     setDeletingId(id)
     try {
       await fetch(`/api/bio-pages/${id}`, { method: 'DELETE' })
       setBios(prev => prev.filter(b => b.id !== id))
     } finally {
       setDeletingId(null)
+      setShowDeleteModal(false)
+      setItemToDelete(null)
     }
   }
 
-  const bgColors: Record<string, string> = {
-    dark: '#0f0f0f',
-    light: '#f5f5f5',
-    purple: '#1a0a2e',
-  }
-
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Carregando...</div>
-
   return (
-    <>
-      <div className="page-content">
-        {bios.length === 0 ? (
-          <div className="card" style={{ padding: '48px 24px', textAlign: 'center', maxWidth: '480px', margin: '0 auto' }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 16px',
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
-              border: '1px solid var(--border-primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
-            }}>
-              🔗
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Nenhuma bio criada
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>
-              Crie sua primeira página link-in-bio para compartilhar todos os seus links.
-            </div>
-            <Link href="/bio-pages/new" className="btn btn-primary">
-              Criar primeira bio
-            </Link>
+    <div className="bio-page">
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Carregando suas bios...</div>
+      ) : bios.length === 0 ? (
+        <div className="dash-card" style={{ padding: '64px 24px', textAlign: 'center', maxWidth: '500px', margin: '40px auto' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '18px', margin: '0 auto 20px',
+            background: 'linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, transparent), rgba(59,130,246,0.1))',
+            border: '1px solid var(--border-primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px',
+          }}>
+            🔗
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-            {bios.map(bio => (
-              <div key={bio.id} className="card" style={{ padding: '0', overflow: 'hidden' }}>
-                {/* Preview strip */}
-                <div style={{
-                  height: '6px',
-                  background: `linear-gradient(90deg, ${bio.accentColor}, ${bio.accentColor}88)`,
-                }} />
-                <div style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {bio.title || bio.slug}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                        123bit.app/b/{bio.slug}
-                      </div>
-                    </div>
-                    <span style={{
-                      fontSize: '11px', fontWeight: 500, padding: '3px 8px', borderRadius: '99px',
-                      background: bio.published ? 'rgba(34,197,94,0.1)' : 'var(--bg-active)',
-                      color: bio.published ? '#22c55e' : 'var(--text-tertiary)',
-                    }}>
-                      {bio.published ? 'Publicado' : 'Rascunho'}
-                    </span>
-                  </div>
-
-                  {/* Stats */}
-                  <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', padding: '12px 0', borderTop: '1px solid var(--border-primary)', borderBottom: '1px solid var(--border-primary)' }}>
-                    <div>
-                      <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>{bio.clicksTotal}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>cliques</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>{bio.itemCount}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>links</div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <Link
-                      href={`/bio?slug=${bio.slug}`}
-                      style={{ flex: 1, textAlign: 'center', fontSize: '12px', fontWeight: 500, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-secondary)', background: 'transparent', color: 'var(--text-secondary)', textDecoration: 'none', cursor: 'pointer' }}
-                    >
-                      Editar
-                    </Link>
-                    <Link
-                      href={`/bio-pages/${bio.id}/analytics`}
-                      style={{ flex: 1, textAlign: 'center', fontSize: '12px', fontWeight: 500, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-secondary)', background: 'transparent', color: 'var(--text-secondary)', textDecoration: 'none', cursor: 'pointer' }}
-                    >
-                      Analytics
-                    </Link>
-                    {bio.published && (
-                      <a
-                        href={`/b/${bio.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ flex: 1, textAlign: 'center', fontSize: '12px', fontWeight: 500, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-secondary)', background: 'transparent', color: 'var(--text-secondary)', textDecoration: 'none', cursor: 'pointer' }}
-                      >
-                        Ver →
-                      </a>
-                    )}
-                    <button
-                      onClick={() => handleDelete(bio.id)}
-                      disabled={deletingId === bio.id}
-                      style={{
-                        width: '36px', height: '36px', borderRadius: '8px', border: 'none',
-                        background: 'transparent', cursor: 'pointer', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)',
-                        opacity: deletingId === bio.id ? 0.5 : 1,
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-tertiary)' }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
-                      </svg>
-                    </button>
-                  </div>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Nenhuma bio criada</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '24px', lineHeight: '1.6' }}>
+            Consolidar todos os seus links em uma única página elegante nunca foi tão fácil. Crie sua primeira bio agora!
+          </p>
+          <Link href="/bio-pages/new" className="btn btn-primary">
+            Começar minha primeira bio
+          </Link>
+        </div>
+      ) : (
+        <div className="bio-grid">
+          {bios.map(bio => (
+            <div key={bio.id} className="bio-list-card">
+              {/* Header strip with theme color */}
+              <div 
+                className="bio-list-card-strip" 
+                style={{ 
+                  background: bio.theme === 'purple' ? 'linear-gradient(90deg, #2e1065, #6d28d9)' : 
+                              bio.theme === 'light' ? '#f8fafc' : '#0f172a'
+                }}
+              >
+                <div 
+                  className="bio-list-card-avatar"
+                  style={{ color: bio.accentColor }}
+                >
+                  {(bio.title || bio.slug)[0].toUpperCase()}
+                </div>
+                
+                {/* Status Badge */}
+                <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                  <span className={`links-status-badge ${bio.published ? 'status-active' : 'status-off'}`}>
+                    <span className="status-dot"></span>
+                    {bio.published ? 'Ativo' : 'Rascunho'}
+                  </span>
                 </div>
               </div>
-            ))}
+
+              <div className="bio-list-card-content">
+                <Link href={`/bio?slug=${bio.slug}`} className="bio-list-card-title" style={{ textDecoration: 'none', display: 'block' }}>
+                  {bio.title || bio.slug}
+                </Link>
+                <div className="bio-list-card-link">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  123bit.app/b/{bio.slug}
+                </div>
+
+                {/* Stats */}
+                <div style={{ display: 'flex', gap: '20px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-primary)' }}>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>{bio.clicksTotal}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cliques</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>{bio.itemCount}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Links</div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px', mt: '16px', paddingTop: '16px' }}>
+                  <Link href={`/bio?slug=${bio.slug}`} className="btn btn-ghost" style={{ flex: 1, fontSize: '12px', height: '36px' }}>
+                    Editar
+                  </Link>
+                  <Link href={`/bio-pages/${bio.id}/analytics`} className="btn btn-ghost" style={{ flex: 1, fontSize: '12px', height: '36px' }}>
+                    Analytics
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setItemToDelete({ id: bio.id, slug: bio.slug });
+                      setShowDeleteModal(true);
+                    }}
+                    disabled={deletingId === bio.id}
+                    className="btn btn-ghost"
+                    style={{ width: '36px', height: '36px', padding: 0, color: 'var(--text-tertiary)' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M9 6V4h6v2" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* DELETE MODAL */}
+      {showDeleteModal && (
+        <div className="sidebar-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="dash-card" style={{ maxWidth: '400px', padding: '28px', textAlign: 'center' }}>
+             <div style={{
+              width: '56px', height: '56px', borderRadius: '16px',
+              background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16" />
+              </svg>
+            </div>
+            <h3 style={{ fontSize: '19px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Excluir página Bio?</h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', lineHeight: '1.6', marginBottom: '28px' }}>
+              Tem certeza que deseja apagar a bio <strong>"{itemToDelete?.slug}"</strong>? Esta ação é irreversível e todos os dados serão perdidos.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => { setShowDeleteModal(false); setItemToDelete(null); }}
+              >
+                Manter Bio
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, background: '#ef4444', border: 'none' }}
+                onClick={() => itemToDelete && handleDelete(itemToDelete.id)}
+                disabled={!!deletingId}
+              >
+                {deletingId ? 'Apagando...' : 'Sim, Excluir'}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   )
 }

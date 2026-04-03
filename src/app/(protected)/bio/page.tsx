@@ -28,9 +28,9 @@ interface BioPage {
 }
 
 const THEMES = [
-  { id: 'dark',   label: 'Escuro',   preview: '#0f0f0f' },
-  { id: 'light',  label: 'Claro',    preview: '#f5f5f5' },
-  { id: 'purple', label: 'Roxo',     preview: '#1a0a2e' },
+  { id: 'dark',   label: 'Dark',   preview: '#0f172a' },
+  { id: 'light',  label: 'Light',  preview: '#f8fafc' },
+  { id: 'purple', label: 'Purple', preview: '#2e1065' },
 ]
 
 export default function BioEditorPage() {
@@ -178,15 +178,15 @@ export default function BioEditorPage() {
   const topbar = useTopbar()
 
   useEffect(() => {
-    topbar.setTitle(bio ? (bio.title || bio.slug) : 'Link-in-Bio')
-    topbar.setSubtitle('Crie sua página pública com todos os seus links')
+    topbar.setTitle(bio ? (bio.title || bio.slug) : 'Editor de Bio')
+    topbar.setSubtitle('Personalize sua página de links')
     topbar.setActions(
       <div style={{ display: 'flex', gap: '8px' }}>
         <Link href="/bio-pages" className="btn btn-ghost" style={{ fontSize: '13px' }}>
-          ← Minhas Bios
+          ← Meus Bios
         </Link>
         {bioUrl && bio && (
-          <a href={bioUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: '13px' }}>
+          <a href={bioUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize: '13px' }}>
             Ver página →
           </a>
         )}
@@ -194,283 +194,168 @@ export default function BioEditorPage() {
     )
   }, [bioUrl, bio])
 
-  const inp: React.CSSProperties = {
-    width: '100%', height: '40px', fontFamily: 'inherit', fontSize: '13px',
-    color: 'var(--text-primary)', background: 'var(--bg-secondary)',
-    border: '1px solid var(--border-secondary)', borderRadius: '8px',
-    padding: '0 12px', outline: 'none', boxSizing: 'border-box',
-  }
-  const lbl: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }
-
   const displayInitial = (displayName || bio?.slug || '?')[0]?.toUpperCase()
   const activeItems = bio?.items.filter(i => i.active) || []
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Carregando...</div>
-  if (error && !bio) return <div style={{ padding: '40px', color: '#ef4444' }}>{error}</div>
+  if (loading) return <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Carregando editor...</div>
 
   return (
-    <>
-      <div className="page-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxWidth: '900px' }}>
-        {/* Left: Editor */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Page settings */}
-          <div className="card" style={{ padding: '20px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Configurações da página</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={lbl}>Slug (URL) <span style={{ color: '#ef4444' }}>*</span></label>
-                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-secondary)', borderRadius: '8px', overflow: 'hidden' }}>
-                  <span style={{ padding: '0 10px', height: '40px', display: 'flex', alignItems: 'center', background: 'var(--bg-primary)', fontSize: '13px', color: 'var(--text-tertiary)', borderRight: '1px solid var(--border-secondary)', whiteSpace: 'nowrap' }}>
-                    123bit.app/b/
-                  </span>
-                  <input
+    <div className="bio-page">
+      <div className="bio-editor-container">
+        
+        {/* LEFT: EDITOR FORM */}
+        <div className="bio-editor-main">
+          
+          {/* Settings Section */}
+          <div className="dash-card">
+            <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>Configurações Globais</h3>
+            
+            <div className="camp-input-group">
+              <div style={{ marginBottom: '16px' }}>
+                <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>URL da Bio (Slug)</label>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-primary)', overflow: 'hidden' }}>
+                   <span style={{ paddingLeft: '12px', paddingRight: '12px', fontSize: '13px', color: 'var(--text-tertiary)', borderRight: '1px solid var(--border-primary)', paddingTop: '14px', paddingBottom: '14px' }}>123bit.app/b/</span>
+                   <input 
+                    className="camp-input" 
+                    style={{ border: 'none', background: 'transparent', width: '100%' }}
                     value={slugField}
                     onChange={e => setSlugField(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                    placeholder="pessoal"
-                    style={{ ...inp, border: 'none', borderRadius: 0, flex: 1 }}
-                  />
+                   />
                 </div>
               </div>
-              <div>
-                <label style={lbl}>Nome de exibição</label>
-                <input
-                  value={displayName}
-                  onChange={e => setDisplayName(e.target.value)}
-                  placeholder={slugField ? `@${slugField}` : 'Seu nome ou marca'}
-                  style={inp}
-                />
+
+              <div style={{ marginBottom: '16px' }}>
+                <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Nome de Exibição / Título</label>
+                <input className="camp-input" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Seu Nome ou Marca" />
               </div>
-              <div>
-                <label style={lbl}>Bio (máx. 200 caracteres)</label>
-                <textarea
-                  value={bioText} onChange={e => setBioText(e.target.value.slice(0, 200))} rows={3}
-                  placeholder="Uma breve descrição sobre você..."
-                  style={{ ...inp, height: 'auto', padding: '8px 12px', resize: 'none', lineHeight: '1.5' }}
-                />
-                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'right', marginTop: '2px' }}>{bioText.length}/200</div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Bio / Descrição Curta</label>
+                <textarea className="camp-textarea" value={bioText} onChange={e => setBioText(e.target.value)} rows={3} placeholder="Escreva algo sobre você..." />
+                <div style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{bioText.length}/160</div>
               </div>
-              <div>
-                <label style={lbl}>Tema</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label className="dash-label" style={{ display: 'block', marginBottom: '10px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tema Visual</label>
+                <div className="bio-theme-grid">
                   {THEMES.map(t => (
-                    <button key={t.id} onClick={() => setTheme(t.id)} style={{
-                      flex: 1, padding: '8px', borderRadius: '8px', border: `2px solid ${theme === t.id ? accentColor : 'var(--border-secondary)'}`,
-                      background: t.preview, cursor: 'pointer', fontSize: '11px', fontWeight: 500,
-                      color: t.id === 'light' ? '#1a1a1a' : '#ffffff',
-                      transition: 'border-color 150ms',
-                    }}>
-                      {t.label}
+                    <button key={t.id} onClick={() => setTheme(t.id)} className={`bio-theme-btn ${theme === t.id ? 'active' : ''}`}>
+                      <div className="bio-theme-dot" style={{ background: t.preview }} />
+                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{t.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={lbl}>Cor de destaque</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '2px', border: '1px solid var(--border-secondary)', borderRadius: '8px', cursor: 'pointer' }} />
-                    <input value={accentColor} onChange={e => setAccentColor(e.target.value)} style={{ ...inp, flex: 1 }} />
-                  </div>
-                </div>
-                <div>
-                  <label style={lbl}>Publicado</label>
-                  <button onClick={() => setPublished(v => !v)} style={{
-                    width: '48px', height: '28px', borderRadius: '14px', border: 'none',
-                    background: published ? accentColor : 'var(--border-secondary)',
-                    cursor: 'pointer', position: 'relative', transition: 'background 200ms',
-                  }}>
-                    <div style={{
-                      width: '22px', height: '22px', borderRadius: '50%', background: 'white',
-                      position: 'absolute', top: '3px', transition: 'left 200ms',
-                      left: published ? '23px' : '3px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    }} />
-                  </button>
-                </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                 <div>
+                   <label className="dash-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Cor de Acento</label>
+                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '2px', border: '1px solid var(--border-primary)', borderRadius: '10px', cursor: 'pointer', background: 'var(--bg-tertiary)' }} />
+                      <input className="camp-input" value={accentColor} onChange={e => setAccentColor(e.target.value)} style={{ width: '100px', fontSize: '13px' }} />
+                   </div>
+                 </div>
+                 <div style={{ textAlign: 'right' }}>
+                    <label className="dash-label" style={{ display: 'block', mb: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Página Publicada</label>
+                    <label className="links-switch">
+                      <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
+                      <span className="links-slider"></span>
+                    </label>
+                 </div>
               </div>
-              {error && <div style={{ fontSize: '13px', color: '#ef4444' }}>{error}</div>}
-              {saved && !error && <div style={{ fontSize: '13px', color: '#22c55e' }}>Salvo com sucesso!</div>}
-              <button className="btn btn-primary" onClick={handleSavePage} disabled={saving || !slugField}>
-                {saved ? 'Salvo!' : saving ? 'Salvando...' : bio ? 'Atualizar página' : 'Criar página'}
+
+              <button className="btn btn-primary" style={{ width: '100%', height: '52px' }} onClick={handleSavePage} disabled={saving}>
+                {saving ? 'Guardando alterações...' : saved ? '✨ Salvo!' : 'Salvar Alterações'}
               </button>
             </div>
           </div>
 
-          {/* Add item */}
+          {/* Links Management Section */}
           {bio && (
-            <div className="card" style={{ padding: '20px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '14px' }}>Adicionar link</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div>
-                  <label style={lbl}>Ícone</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {EMOJI_OPTIONS.map(emoji => (
-                      <button
-                        key={emoji || 'none'}
-                        onClick={() => setNewIcon(emoji)}
-                        style={{
-                          width: '36px', height: '36px', borderRadius: '8px', border: 'none',
-                          background: newIcon === emoji ? 'var(--bg-active)' : 'var(--bg-primary)',
-                          cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          outline: newIcon === emoji ? `2px solid ${accentColor}` : 'none',
-                          transition: 'all 150ms',
-                        }}
-                        title={emoji || 'Sem ícone'}
-                      >
-                        {emoji || '✕'}
-                      </button>
-                    ))}
+            <div className="dash-card">
+              <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>Gerenciar Links</h3>
+              
+              {/* Add New Link */}
+              <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '14px', marginBottom: '24px', border: '1px dashed var(--border-primary)' }}>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', color: 'var(--text-tertiary)' }}>Ícone</label>
+                    <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
+                       {EMOJI_OPTIONS.map(em => (
+                         <button key={em} onClick={() => setNewIcon(em)} style={{ width: '32px', height: '32px', background: newIcon === em ? accentColor : 'var(--bg-secondary)', color: newIcon === em ? '#fff' : 'inherit', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', flexShrink: 0  }}>
+                           {em || '∅'}
+                         </button>
+                       ))}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label style={lbl}>Texto do botão *</label>
-                  <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Ex: Meu portfólio" style={inp} />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  <input className="camp-input" style={{ flex: '1 1 200px' }} value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Texto do botão" />
+                  <input className="camp-input" style={{ flex: '2 1 300px' }} value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="URL de destino" />
+                  <button className="btn btn-ghost" style={{ flex: '1 1 100%' }} onClick={handleAddItem} disabled={addingItem || !newLabel || !newUrl}>
+                    {addingItem ? 'Adicionando...' : '+ Adicionar Link'}
+                  </button>
                 </div>
-                <div>
-                  <label style={lbl}>URL *</label>
-                  <input type="url" value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://..." style={inp} />
-                </div>
-                <button className="btn btn-ghost" onClick={handleAddItem} disabled={addingItem || !newLabel || !newUrl} style={{ width: '100%' }}>
-                  {addingItem ? 'Adicionando...' : '+ Adicionar'}
-                </button>
               </div>
-            </div>
-          )}
 
-          {!bio && (
-            <div className="card" style={{ padding: '24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔗</div>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '4px' }}>Crie sua página bio</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Preencha o slug acima e clique em "Criar página" para começar.</div>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Preview + items list + metrics */}
-        <div>
-          {/* Phone preview */}
-          <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-tertiary)', marginBottom: '12px' }}>Preview</div>
-            <div style={{
-              borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border-secondary)',
-              background: theme === 'light' ? '#f5f5f5' : theme === 'purple' ? 'linear-gradient(135deg,#1a0a2e,#0f3460)' : '#0f0f0f',
-              padding: '24px 16px', minHeight: '220px', textAlign: 'center',
-            }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: accentColor, margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 700, color: 'white' }}>
-                {displayInitial}
-              </div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: theme === 'light' ? '#1a1a1a' : 'white', marginBottom: '4px' }}>
-                {displayName || (slugField ? `@${slugField}` : 'Seu nome')}
-              </div>
-              {bioText && <div style={{ fontSize: '11px', color: theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>{bioText.slice(0, 60)}{bioText.length > 60 ? '...' : ''}</div>}
-              {activeItems.length === 0 && (bio?.items.length || 0) === 0 && (
-                <div style={{ fontSize: '11px', color: theme === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)', marginTop: '16px' }}>
-                  Nenhum link adicionado ainda
-                </div>
-              )}
-              {activeItems.slice(0, 3).map(item => (
-                <div key={item.id} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', marginBottom: '6px', fontSize: '12px', color: theme === 'light' ? '#1a1a1a' : 'white', fontWeight: 500 }}>
-                  {item.icon} {item.label}
-                </div>
-              ))}
-              {activeItems.length > 3 && <div style={{ fontSize: '11px', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)' }}>+{activeItems.length - 3} mais</div>}
-            </div>
-          </div>
-
-          {/* Items list */}
-          {bio && bio.items.length > 0 && (
-            <div className="card" style={{ padding: '16px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-tertiary)', marginBottom: '10px' }}>Links ({bio.items.length})</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {bio.items.map(item => (
-                  <div key={item.id} style={{
-                    display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '8px',
-                    background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)',
-                    opacity: item.active ? 1 : 0.5,
-                  }}>
-                    <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.icon || '🔗'}</span>
+              {/* Current Links List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {bio.items.length === 0 && <div style={{ textAlign: 'center', paddingTop: '20px', paddingBottom: '20px', color: 'var(--text-tertiary)', fontSize: '13px' }}>Você ainda não adicionou nenhum link.</div>}
+                {bio.items.map(it => (
+                  <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-primary)', opacity: it.active ? 1 : 0.6 }}>
+                    <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>{it.icon || '🔗'}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)' }}>{item.label}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{item.clicks} cliques</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.url}</div>
                     </div>
-                    <button
-                      onClick={() => handleToggleItem(item.id, item.active)}
-                      style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-secondary)', background: 'transparent', cursor: 'pointer', color: item.active ? '#22c55e' : 'var(--text-tertiary)' }}
-                    >
-                      {item.active ? 'Ativo' : 'Oculto'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      disabled={deletingId === item.id}
-                      style={{ width: '26px', height: '26px', borderRadius: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /></svg>
+                    <div style={{ textAlign: 'right', paddingLeft: '8px', paddingRight: '8px' }}>
+                       <div style={{ fontSize: '12px', fontWeight: 700 }}>{it.clicks}</div>
+                       <div style={{ fontSize: '9px', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>cliques</div>
+                    </div>
+                    <label className="links-switch" style={{ width: '36px', height: '20px' }}>
+                      <input type="checkbox" checked={it.active} onChange={() => handleToggleItem(it.id, it.active)} />
+                      <span className="links-slider" style={{ borderRadius: '99px' }}></span>
+                    </label>
+                    <button onClick={() => handleDeleteItem(it.id)} style={{ padding: '8px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /></svg>
                     </button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Analytics */}
-          {bio && bio.items.length > 0 && (() => {
-            const totalClicks = bio.items.reduce((sum, i) => sum + i.clicks, 0)
-            const maxClicks = Math.max(...bio.items.map(i => i.clicks), 1)
-            const sorted = [...bio.items].sort((a, b) => b.clicks - a.clicks)
-            return (
-              <div className="card" style={{ padding: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Métricas</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>{totalClicks + bio.clicksTotal}</strong> cliques totais
-                  </div>
-                </div>
-                {totalClicks === 0 && bio.clicksTotal === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-tertiary)', fontSize: '13px' }}>
-                    Nenhum clique registrado ainda. Compartilhe sua bio para começar!
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {sorted.map((item, idx) => {
-                      const pct = totalClicks > 0 ? Math.round((item.clicks / totalClicks) * 100) : 0
-                      const barWidth = Math.round((item.clicks / maxClicks) * 100)
-                      return (
-                        <div key={item.id}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', width: '16px', textAlign: 'center' }}>
-                                {idx === 0 && totalClicks > 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}
-                              </span>
-                              <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                                {item.icon} {item.label}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{pct}%</span>
-                              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', minWidth: '60px', textAlign: 'right' }}>
-                                {item.clicks} cliques
-                              </span>
-                            </div>
-                          </div>
-                          <div style={{ height: '6px', background: 'var(--bg-primary)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{
-                              height: '100%',
-                              width: `${barWidth}%`,
-                              background: idx === 0 ? accentColor : 'var(--text-tertiary)',
-                              borderRadius: '3px',
-                              transition: 'width 600ms ease-out',
-                              opacity: idx === 0 ? 1 : 0.6,
-                            }} />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })()}
         </div>
+
+        {/* RIGHT: PHONE PREVIEW */}
+        <div className="bio-phone-wrapper">
+          <div className={`bio-phone theme-${theme}`}>
+            <div className="bio-phone-notch" />
+            <div className="bio-phone-avatar" style={{ background: accentColor }}>{displayInitial}</div>
+            <div className="bio-phone-title">{displayName || (slugField ? `@${slugField}` : 'Seu Nome')}</div>
+            <div className="bio-phone-desc">{bioText || 'Escreva algo cativante aqui na sua bio...'}</div>
+            
+            <div className="bio-phone-links">
+              {activeItems.length === 0 && (
+                <div style={{ textAlign: 'center', marginTop: '40px', opacity: 0.3, fontSize: '12px' }}>Os links ativos aparecerão aqui</div>
+              )}
+              {activeItems.map(it => (
+                <div key={it.id} className="bio-phone-link-btn" style={{ borderLeftWidth: '5px', borderLeftColor: accentColor }}>
+                  {it.icon} {it.label}
+                </div>
+              ))}
+            </div>
+            
+            <div style={{ marginTop: 'auto', textAlign: 'center', paddingTop: '20px', paddingBottom: '20px', opacity: 0.5, fontSize: '10px', letterSpacing: '1px' }}>
+              POWERED BY 123BIT
+            </div>
+          </div>
+          
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+             <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Pré-visualização em tempo real</p>
+          </div>
+        </div>
+
       </div>
-    </>
+    </div>
   )
 }
