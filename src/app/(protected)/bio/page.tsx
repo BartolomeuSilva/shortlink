@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useTopbar } from '@/components/layout/Topbar'
 
@@ -35,7 +35,6 @@ const THEMES = [
 
 export default function BioEditorPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const slug = searchParams.get('slug')
 
   const [bio, setBio] = useState<BioPage | null>(null)
@@ -200,128 +199,275 @@ export default function BioEditorPage() {
   if (loading) return <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Carregando editor...</div>
 
   return (
-    <div className="bio-page">
+    <div className="page-content" style={{ alignItems: 'stretch' }}>
       <div className="bio-editor-container">
         
         {/* LEFT: EDITOR FORM */}
         <div className="bio-editor-main">
-          
-          {/* Settings Section */}
-          <div className="dash-card">
-            <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>Configurações Globais</h3>
-            
-            <div className="camp-input-group">
-              <div style={{ marginBottom: '16px' }}>
-                <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>URL da Bio (Slug)</label>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-primary)', overflow: 'hidden' }}>
-                   <span style={{ paddingLeft: '12px', paddingRight: '12px', fontSize: '13px', color: 'var(--text-tertiary)', borderRight: '1px solid var(--border-primary)', paddingTop: '14px', paddingBottom: '14px' }}>123bit.app/b/</span>
-                   <input 
-                    className="camp-input" 
-                    style={{ border: 'none', background: 'transparent', width: '100%' }}
-                    value={slugField}
-                    onChange={e => setSlugField(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                   />
-                </div>
-              </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Nome de Exibição / Título</label>
-                <input className="camp-input" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Seu Nome ou Marca" />
-              </div>
+          {/* ── Configurações Globais ── */}
+          <div className="settings-info-list" style={{ marginBottom: 0 }}>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Bio / Descrição Curta</label>
-                <textarea className="camp-textarea" value={bioText} onChange={e => setBioText(e.target.value)} rows={3} placeholder="Escreva algo sobre você..." />
-                <div style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{bioText.length}/160</div>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px' }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Configurações Globais</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>URL, aparência e publicação</div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Publicado</span>
+                <label className="links-switch">
+                  <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
+                  <span className="links-slider" />
+                </label>
+              </div>
+            </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label className="dash-label" style={{ display: 'block', marginBottom: '10px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tema Visual</label>
-                <div className="bio-theme-grid">
+            {/* Slug */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border-primary)' }}>
+              <label className="settings-list-label">Endereço público</label>
+              <div style={{
+                display: 'flex', alignItems: 'center', height: '42px',
+                border: '1px solid var(--border-primary)', borderRadius: '10px',
+                overflow: 'hidden', background: 'var(--bg-tertiary)',
+              }}>
+                <span style={{
+                  padding: '0 12px', height: '100%', display: 'flex', alignItems: 'center',
+                  fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-mono)',
+                  borderRight: '1px solid var(--border-primary)', whiteSpace: 'nowrap',
+                  background: 'var(--bg-secondary)', flexShrink: 0,
+                }}>
+                  123bit.app/b/
+                </span>
+                <input
+                  value={slugField}
+                  onChange={e => setSlugField(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                  style={{
+                    flex: 1, height: '100%', border: 'none', outline: 'none', background: 'transparent',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--text-primary)', padding: '0 12px',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Display Name */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border-primary)' }}>
+              <label className="settings-list-label">Nome / Título</label>
+              <input
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="Seu nome ou marca"
+                style={{
+                  width: '100%', height: '42px', padding: '0 14px', borderRadius: '10px',
+                  border: '1px solid var(--border-primary)', background: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Bio */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border-primary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                <label className="settings-list-label" style={{ marginBottom: 0 }}>Descrição</label>
+                <span style={{ fontSize: '11px', color: bioText.length > 160 ? '#ef4444' : 'var(--text-tertiary)' }}>
+                  {bioText.length}/160
+                </span>
+              </div>
+              <textarea
+                value={bioText}
+                onChange={e => setBioText(e.target.value)}
+                rows={3}
+                placeholder="Escreva algo sobre você..."
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: '10px', resize: 'none',
+                  border: '1px solid var(--border-primary)', background: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)', fontSize: '13px', lineHeight: 1.6,
+                  fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Theme + Color — two columns */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border-primary)', display: 'grid', gridTemplateColumns: '1fr auto', gap: '24px', alignItems: 'start' }}>
+              <div>
+                <label className="settings-list-label">Tema</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
                   {THEMES.map(t => (
-                    <button key={t.id} onClick={() => setTheme(t.id)} className={`bio-theme-btn ${theme === t.id ? 'active' : ''}`}>
-                      <div className="bio-theme-dot" style={{ background: t.preview }} />
-                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{t.label}</span>
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme(t.id)}
+                      style={{
+                        flex: 1, height: '38px', borderRadius: '10px', cursor: 'pointer',
+                        background: t.preview, fontSize: '12px', fontWeight: 600,
+                        color: t.id === 'light' ? '#111' : '#fff',
+                        border: `2px solid ${theme === t.id ? accentColor : 'transparent'}`,
+                        outline: theme === t.id ? `3px solid color-mix(in srgb, ${accentColor} 25%, transparent)` : 'none',
+                        transition: 'all 150ms',
+                      }}
+                    >
+                      {t.label}
                     </button>
                   ))}
                 </div>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                 <div>
-                   <label className="dash-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Cor de Acento</label>
-                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                      <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '2px', border: '1px solid var(--border-primary)', borderRadius: '10px', cursor: 'pointer', background: 'var(--bg-tertiary)' }} />
-                      <input className="camp-input" value={accentColor} onChange={e => setAccentColor(e.target.value)} style={{ width: '100px', fontSize: '13px' }} />
-                   </div>
-                 </div>
-                 <div style={{ textAlign: 'right' }}>
-                    <label className="dash-label" style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Página Publicada</label>
-                    <label className="links-switch">
-                      <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
-                      <span className="links-slider"></span>
-                    </label>
-                 </div>
+              <div>
+                <label className="settings-list-label">Cor</label>
+                <div style={{ position: 'relative', width: '38px', height: '38px' }}>
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={e => setAccentColor(e.target.value)}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                  />
+                  <div style={{
+                    width: '38px', height: '38px', borderRadius: '10px',
+                    background: accentColor, border: '2px solid var(--border-secondary)',
+                    boxShadow: `0 0 0 3px color-mix(in srgb, ${accentColor} 22%, transparent)`,
+                    pointerEvents: 'none',
+                  }} />
+                </div>
               </div>
+            </div>
 
-              <button className="btn btn-primary" style={{ width: '100%', height: '52px' }} onClick={handleSavePage} disabled={saving}>
-                {saving ? 'Guardando alterações...' : saved ? '✨ Salvo!' : 'Salvar Alterações'}
+            {/* Error */}
+            {error && (
+              <div style={{ margin: '0 24px 14px', fontSize: '13px', color: '#ef4444', padding: '10px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                {error}
+              </div>
+            )}
+
+            {/* Footer / Save */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border-primary)' }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSavePage}
+                disabled={saving}
+                style={{ width: '100%', height: '44px', fontSize: '14px' }}
+              >
+                {saving ? 'Salvando...' : saved ? '✓ Alterações salvas!' : 'Salvar Alterações'}
               </button>
             </div>
           </div>
 
-          {/* Links Management Section */}
+          {/* ── Gerenciar Links ── */}
           {bio && (
-            <div className="dash-card">
-              <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px' }}>Gerenciar Links</h3>
-              
-              {/* Add New Link */}
-              <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '14px', marginBottom: '24px', border: '1px dashed var(--border-primary)' }}>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', color: 'var(--text-tertiary)' }}>Ícone</label>
-                    <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
-                       {EMOJI_OPTIONS.map(em => (
-                         <button key={em} onClick={() => setNewIcon(em)} style={{ width: '32px', height: '32px', background: newIcon === em ? accentColor : 'var(--bg-secondary)', color: newIcon === em ? '#fff' : 'inherit', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', flexShrink: 0  }}>
-                           {em || '∅'}
-                         </button>
-                       ))}
-                    </div>
+            <div className="settings-info-list" style={{ marginBottom: 0, marginTop: '16px' }}>
+
+              {/* Header */}
+              <div style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Gerenciar Links</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                    {bio.items.length === 0 ? 'Nenhum link ainda' : `${bio.items.length} link${bio.items.length !== 1 ? 's' : ''}`}
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  <input className="camp-input" style={{ flex: '1 1 200px' }} value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Texto do botão" />
-                  <input className="camp-input" style={{ flex: '2 1 300px' }} value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="URL de destino" />
-                  <button className="btn btn-ghost" style={{ flex: '1 1 100%' }} onClick={handleAddItem} disabled={addingItem || !newLabel || !newUrl}>
-                    {addingItem ? 'Adicionando...' : '+ Adicionar Link'}
+              </div>
+
+              {/* Add form */}
+              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label className="settings-list-label" style={{ marginBottom: 0 }}>Adicionar novo link</label>
+
+                {/* Emoji strip */}
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
+                  {EMOJI_OPTIONS.map(em => (
+                    <button
+                      key={em}
+                      onClick={() => setNewIcon(em)}
+                      title={em || 'Sem ícone'}
+                      style={{
+                        width: '36px', height: '36px', flexShrink: 0,
+                        background: newIcon === em ? accentColor : 'var(--bg-tertiary)',
+                        border: `1px solid ${newIcon === em ? accentColor : 'var(--border-primary)'}`,
+                        borderRadius: '8px', cursor: 'pointer', fontSize: '17px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      {em || <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={newIcon === em ? '#fff' : 'var(--text-tertiary)'} strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    value={newLabel}
+                    onChange={e => setNewLabel(e.target.value)}
+                    placeholder="Texto do botão"
+                    style={{
+                      flex: 1, height: '40px', padding: '0 12px', borderRadius: '10px',
+                      border: '1px solid var(--border-primary)', background: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)', fontSize: '13px', outline: 'none',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    value={newUrl}
+                    onChange={e => setNewUrl(e.target.value)}
+                    placeholder="https://..."
+                    onKeyDown={e => e.key === 'Enter' && handleAddItem()}
+                    style={{
+                      flex: 1, height: '40px', padding: '0 12px', borderRadius: '10px',
+                      border: '1px solid var(--border-primary)', background: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)', fontSize: '13px', outline: 'none',
+                      fontFamily: 'var(--font-dm-mono)',
+                    }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleAddItem}
+                    disabled={addingItem || !newLabel.trim() || !newUrl.trim()}
+                    style={{ height: '40px', padding: '0 18px', fontSize: '13px', flexShrink: 0 }}
+                  >
+                    {addingItem ? '...' : '+ Adicionar'}
                   </button>
                 </div>
               </div>
 
-              {/* Current Links List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {bio.items.length === 0 && <div style={{ textAlign: 'center', paddingTop: '20px', paddingBottom: '20px', color: 'var(--text-tertiary)', fontSize: '13px' }}>Você ainda não adicionou nenhum link.</div>}
-                {bio.items.map(it => (
-                  <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-primary)', opacity: it.active ? 1 : 0.6 }}>
-                    <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>{it.icon || '🔗'}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.url}</div>
+              {/* Link list */}
+              {bio.items.length === 0 ? (
+                <div style={{ padding: '32px 24px', borderTop: '1px solid var(--border-primary)', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                  Adicione seu primeiro link acima
+                </div>
+              ) : (
+                <div style={{ padding: '8px 16px 12px', borderTop: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {bio.items.map(it => (
+                    <div key={it.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', borderRadius: '10px',
+                      background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)',
+                      opacity: it.active ? 1 : 0.5, transition: 'opacity 150ms',
+                    }}>
+                      <div style={{
+                        width: '30px', height: '30px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '17px', background: 'var(--bg-secondary)', borderRadius: '7px',
+                      }}>
+                        {it.icon || '🔗'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-dm-mono)' }}>{it.url}</div>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', flexShrink: 0 }}>
+                        {it.clicks} <span style={{ fontSize: '9px', textTransform: 'uppercase' }}>cliques</span>
+                      </span>
+                      <label className="links-switch">
+                        <input type="checkbox" checked={it.active} onChange={() => handleToggleItem(it.id, it.active)} />
+                        <span className="links-slider" />
+                      </label>
+                      <button
+                        onClick={() => handleDeleteItem(it.id)}
+                        disabled={deletingId === it.id}
+                        style={{ padding: '5px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
+                        </svg>
+                      </button>
                     </div>
-                    <div style={{ textAlign: 'right', paddingLeft: '8px', paddingRight: '8px' }}>
-                       <div style={{ fontSize: '12px', fontWeight: 700 }}>{it.clicks}</div>
-                       <div style={{ fontSize: '9px', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>cliques</div>
-                    </div>
-                    <label className="links-switch" style={{ width: '36px', height: '20px' }}>
-                      <input type="checkbox" checked={it.active} onChange={() => handleToggleItem(it.id, it.active)} />
-                      <span className="links-slider" style={{ borderRadius: '99px' }}></span>
-                    </label>
-                    <button onClick={() => handleDeleteItem(it.id)} style={{ padding: '8px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /></svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

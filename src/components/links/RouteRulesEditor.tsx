@@ -143,23 +143,29 @@ export default function RouteRulesEditor({ linkId }: RouteRulesEditorProps) {
     return rule.condition
   }
 
-  const typeInfo = RULE_TYPES.find(t => t.value === ruleType)
 
   if (loading) return <div style={{ padding: '20px', color: 'var(--text-tertiary)' }}>Carregando regras...</div>
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div>
-          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>Smart Routing & A/B Testing</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-            {rules.length} regra{rules.length !== 1 ? 's' : ''} ativa{rules.length !== 1 ? 's' : ''}
+      <div className="dash-card-topbar">
+        <div className="dash-card-topbar-left">
+          <div className="dash-card-icon-wrapper">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <div>
+            <div className="dash-card-title">Smart Routing & A/B Testing</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '1px' }}>
+              {rules.length} regra{rules.length !== 1 ? 's' : ''} ativa{rules.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
           className="btn btn-primary"
-          style={{ fontSize: '12px', padding: '6px 12px' }}
+          style={{ fontSize: '12px', height: '32px', padding: '0 12px' }}
         >
           {showForm ? 'Cancelar' : '+ Nova regra'}
         </button>

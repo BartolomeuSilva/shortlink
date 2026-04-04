@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { useTopbar } from '@/components/layout/Topbar'
 
 interface ApiKey {
   id: string
@@ -9,6 +9,11 @@ interface ApiKey {
   lastUsedAt: string | null
   expiresAt: string | null
   createdAt: string
+}
+
+function formatDate(date: string | null): string {
+  if (!date) return '—'
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date))
 }
 
 function timeAgo(date: string | null): string {
@@ -23,11 +28,6 @@ function timeAgo(date: string | null): string {
   return `${Math.floor(months / 12)}a atrás`
 }
 
-function formatDate(date: string | null): string {
-  if (!date) return '—'
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date))
-}
-
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,9 +35,16 @@ export default function ApiKeysPage() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
   const [newKey, setNewKey] = useState<{ id: string; key: string; name: string } | null>(null)
-  const [copiedKey, setCopiedKey] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
-  const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('Chaves de API')
+    topbar.setSubtitle('Gerencie chaves de acesso para integração com a API')
+    topbar.setActions(null)
+  }, [topbar])
 
   useEffect(() => {
     fetch('/api/keys')
@@ -77,61 +84,70 @@ export default function ApiKeysPage() {
       if (newKey?.id === id) setNewKey(null)
     } finally {
       setRevokingId(null)
-      setRevokeConfirmId(null)
+      setConfirmId(null)
     }
   }
 
   const copyKey = () => {
     if (!newKey) return
     navigator.clipboard.writeText(newKey.key)
-    setCopiedKey(true)
-    setTimeout(() => setCopiedKey(false), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
     <div className="page-content">
-      <PageHeader
-        title="Chaves de API"
-        subtitle="Gerencie suas chaves de acesso para integração com outros sistemas"
-      />
-
       <div className="settings-container">
-        {/* Nova chave revelada — Modal de Segurança */}
+
+        {/* Chave recém-criada */}
         {newKey && (
-          <div className="glass-card mb-8 p-6 border-green-500/30 bg-green-500/[0.02] animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-              <span className="text-xs font-bold text-green-500 uppercase tracking-widest">
+          <div style={{
+            marginBottom: '24px', padding: '20px 24px', borderRadius: '16px',
+            background: 'color-mix(in srgb, #22c55e 6%, transparent)',
+            border: '1px solid color-mix(in srgb, #22c55e 25%, transparent)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Chave criada com sucesso
               </span>
             </div>
-            <p className="text-sm text-secondary mb-6 leading-relaxed">
-              Certifique-se de copiar sua chave agora. Por sua segurança, <strong className="text-white">esta é a única vez que ela será exibida integralmente</strong>.
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
+              Certifique-se de copiar sua chave agora. Por sua segurança, <strong style={{ color: 'var(--text-primary)' }}>esta é a única vez que ela será exibida integralmente</strong>.
             </p>
-            
-            <div className="flex gap-3">
-              <div className="flex-1 px-4 py-3.5 rounded-xl bg-black/40 border border-white/10 font-mono text-sm break-all text-primary selection:bg-primary/20">
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+              <div style={{
+                flex: 1, padding: '12px 16px', borderRadius: '10px',
+                background: 'var(--bg-primary)', border: '1px solid var(--border-secondary)',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--primary)',
+                wordBreak: 'break-all', lineHeight: 1.5,
+              }}>
                 {newKey.key}
               </div>
               <button
                 onClick={copyKey}
-                className={`btn glass px-5 h-[48px] flex items-center justify-center gap-2 transition-all duration-300 ${copiedKey ? 'text-green-500 border-green-500/50 bg-green-500/10' : 'hover:border-primary/50'}`}
-                title="Copiar chave"
+                className="btn btn-ghost"
+                style={{
+                  height: 'auto', padding: '0 16px', flexShrink: 0, fontSize: '13px', fontWeight: 600,
+                  border: `1px solid ${copied ? '#22c55e' : 'var(--border-secondary)'}`,
+                  color: copied ? '#22c55e' : 'var(--text-secondary)',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                }}
               >
-                {copiedKey ? (
+                {copied ? (
                   <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" fill="none">
+                    <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" fill="none">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    <span className="text-xs font-bold uppercase tracking-wider">Copiado</span>
+                    Copiado
                   </>
                 ) : (
                   <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                    <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
                       <rect x="9" y="9" width="13" height="13" rx="2" />
                       <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                     </svg>
-                    <span className="text-xs font-bold uppercase tracking-wider">Copiar</span>
+                    Copiar
                   </>
                 )}
               </button>
@@ -139,22 +155,24 @@ export default function ApiKeysPage() {
           </div>
         )}
 
-        {/* Card de Geração de Nova Chave — Estrutura em Linha Premium */}
+        {/* Gerar nova chave */}
         <div className="settings-action-card">
           <div className="settings-action-header">
             <h3 className="settings-action-title">Gerar Nova Chave</h3>
-            <p className="settings-action-description">
-              Crie uma nova chave para acessar nossa API de forma segura em seus projetos.
-            </p>
+            <p className="settings-action-description">Crie uma nova chave para acessar a API de forma segura em seus projetos.</p>
+            {error && (
+              <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', padding: '10px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                {error}
+              </div>
+            )}
           </div>
-
           <div className="settings-action-form">
-            <div className="settings-input-group-modern">
+            <div className="settings-input-group-modern" style={{ minWidth: '220px' }}>
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
                 placeholder="Ex: API Produção - Backend"
                 className="settings-input-modern"
               />
@@ -163,88 +181,73 @@ export default function ApiKeysPage() {
               onClick={handleCreate}
               disabled={creating || !name.trim()}
               className="btn btn-primary"
-              style={{ minWidth: '150px', height: '48px' }}
+              style={{ height: '48px', padding: '0 24px', flexShrink: 0 }}
             >
               {creating ? 'Gerando...' : 'Gerar Chave'}
             </button>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium animate-in slide-in-from-top-2">
-            {error}
-          </div>
-        )}
-
-        {/* Listagem de Chaves Ativas */}
-        <h3 className="settings-section-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" fill="none" className="text-primary opacity-80">
-            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-          </svg>
-          Chaves Ativas
-        </h3>
+        {/* Lista de chaves */}
+        <div style={{ marginTop: '32px', marginBottom: '16px' }}>
+          <div className="settings-label">Chaves Ativas</div>
+        </div>
 
         {loading ? (
-          <div className="glass-card flex items-center justify-center py-24">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <div className="profile-spinner" style={{ width: '28px', height: '28px', border: '3px solid var(--border-secondary)', borderTopColor: 'var(--primary)', borderRadius: '50%', margin: '0 auto' }} />
           </div>
         ) : keys.length === 0 ? (
-          <div className="glass-card py-20 text-center border-dashed">
-            <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-inner">
-              <svg width="32" height="32" viewBox="0 0 24 24" stroke="var(--text-tertiary)" strokeWidth="1.5" fill="none" className="opacity-50">
+          <div style={{
+            padding: '48px 24px', textAlign: 'center', borderRadius: '16px',
+            background: 'var(--bg-secondary)', border: '1px dashed var(--border-secondary)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+          }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none">
                 <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
               </svg>
             </div>
-            <h4 className="text-xl font-semibold text-white mb-2">Sem chaves ativas</h4>
-            <p className="text-sm text-tertiary max-w-xs mx-auto leading-relaxed">Você ainda não possui chaves de API. Crie uma acima para começar a usar a API.</p>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Nenhuma chave ativa</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Gere uma chave acima para começar a usar a API.</div>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {keys.map((k) => (
-              <div key={k.id} className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-white/20 hover:bg-white/[0.02] transition-all duration-500 group">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-bold text-white tracking-tight group-hover:text-primary transition-colors">{k.name}</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest border border-primary/20">Ativa</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-y-2 text-xs text-secondary font-medium">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1.5 opacity-70">
-                        Criada em {formatDate(k.createdAt)}
-                      </span>
-                      {k.lastUsedAt && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-white/10 hide-mobile"></span>
-                          <span className="flex items-center gap-1.5 opacity-70">
-                            Último uso: {timeAgo(k.lastUsedAt)}
-                          </span>
-                        </>
-                      )}
+          <div className="settings-info-list">
+            {keys.map(k => (
+              <div key={k.id} className="settings-info-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px', padding: '16px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{k.name}</span>
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: 'color-mix(in srgb, #22c55e 10%, transparent)', color: '#22c55e', border: '1px solid color-mix(in srgb, #22c55e 25%, transparent)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ativa</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', display: 'flex', gap: '16px' }}>
+                      <span>Criada em {formatDate(k.createdAt)}</span>
+                      {k.lastUsedAt && <span>Último uso: {timeAgo(k.lastUsedAt)}</span>}
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-0">
-                  {revokeConfirmId === k.id ? (
-                    <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-                      <button 
-                        onClick={() => setRevokeConfirmId(null)} 
-                        className="btn glass px-4 h-9 text-[10px] font-bold uppercase tracking-wider"
-                      >
+
+                  {confirmId === k.id ? (
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      <button onClick={() => setConfirmId(null)} className="btn btn-ghost" style={{ height: '34px', padding: '0 14px', fontSize: '12px' }}>
                         Cancelar
                       </button>
-                      <button 
-                        onClick={() => handleRevoke(k.id)} 
+                      <button
+                        onClick={() => handleRevoke(k.id)}
                         disabled={revokingId === k.id}
-                        className="btn bg-red-500/90 hover:bg-red-500 text-white border-none px-5 h-9 text-[10px] font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                        className="btn"
+                        style={{ height: '34px', padding: '0 14px', fontSize: '12px', background: '#ef4444', color: 'white', border: 'none' }}
                       >
-                        {revokingId === k.id ? '...' : 'Confirmar'}
+                        {revokingId === k.id ? '...' : 'Confirmar revogação'}
                       </button>
                     </div>
                   ) : (
                     <button
-                      onClick={() => setRevokeConfirmId(k.id)}
-                      className="btn glass border-transparent hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-500 text-tertiary px-4 h-9 text-[10px] font-bold uppercase tracking-widest transition-all group-hover:opacity-100 md:opacity-50"
+                      onClick={() => setConfirmId(k.id)}
+                      className="btn btn-ghost"
+                      style={{ height: '34px', padding: '0 14px', fontSize: '12px', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', flexShrink: 0 }}
                     >
                       Revogar
                     </button>
@@ -255,20 +258,18 @@ export default function ApiKeysPage() {
           </div>
         )}
 
-        <div className="mt-12 p-6 rounded-2xl bg-amber-500/[0.03] border border-amber-500/10 flex items-start gap-4">
-          <svg width="22" height="22" viewBox="0 0 24 24" stroke="rgb(245, 158, 11)" strokeWidth="2" fill="none" className="mt-0.5 flex-shrink-0 opacity-70">
+        {/* Aviso de segurança */}
+        <div className="settings-hint" style={{ marginTop: '24px', borderLeftColor: '#f59e0b' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <div className="space-y-1">
-            <h5 className="text-xs font-bold text-amber-500 uppercase tracking-widest">Aviso de Segurança</h5>
-            <p className="text-sm text-yellow-100/50 leading-relaxed font-medium">
-              Chaves de API concedem acesso total à sua conta. Trate-as como senhas. 
-              Nunca publique-as no GitHub ou locais públicos. Caso suspeite de vazamento, <strong className="text-amber-500">revogue-as imediatamente</strong>.
-            </p>
+          <div className="settings-hint-text">
+            <strong style={{ color: '#f59e0b' }}>Aviso de Segurança:</strong> Chaves de API concedem acesso total à sua conta. Trate-as como senhas. Nunca publique-as no GitHub ou locais públicos. Caso suspeite de vazamento, <strong>revogue-as imediatamente</strong>.
           </div>
         </div>
+
       </div>
     </div>
   )

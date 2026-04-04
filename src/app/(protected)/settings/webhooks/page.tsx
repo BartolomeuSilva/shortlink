@@ -19,6 +19,7 @@ const EVENT_LABELS: Record<string, string> = {
   'link.clicked': 'Clique em link',
   'link.created': 'Link criado',
   'link.expired': 'Link expirado',
+  'link.health': 'Saúde do link',
 }
 const ALL_EVENTS = Object.keys(EVENT_LABELS)
 
@@ -132,122 +133,103 @@ export default function WebhooksPage() {
         </div>
 
         {/* Action Card: Create Webhook */}
-        <div className={`settings-action-card ${showForm ? 'expanded' : ''}`}>
-          <div className="settings-action-header" onClick={() => !showForm && setShowForm(true)} style={{ cursor: showForm ? 'default' : 'pointer' }}>
-            <div className="settings-action-icon" style={{ background: 'var(--primary-lighter)', color: 'var(--primary)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
+        {!showForm ? (
+          <div className="settings-action-card">
+            <div className="settings-action-header">
+              <h3 className="settings-action-title">Novo Webhook</h3>
+              <p className="settings-action-description">Crie integrações em tempo real para seus eventos dos links.</p>
             </div>
-            <div className="settings-action-info" style={{ flex: 1 }}>
-              <h3 className="settings-action-title">Configurar Novo Webhook</h3>
-              <p className="settings-action-description">Crie integrações em tempo real para seus eventos.</p>
-            </div>
-            {!showForm && (
-              <button className="btn btn-primary" style={{ height: '36px', fontSize: '13px' }}>
-                Começar
+            <div className="settings-action-form">
+              <button className="btn btn-primary" onClick={() => setShowForm(true)} style={{ height: '48px', padding: '0 28px' }}>
+                + Criar Webhook
               </button>
-            )}
+            </div>
           </div>
+        ) : (
+          <div className="settings-action-card" style={{ flexDirection: 'column' }}>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Novo Webhook</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>Preencha os campos abaixo para criar uma nova integração</div>
+            </div>
 
-          {showForm && (
-            <div style={{ marginTop: '24px', animation: 'slideDown 0.3s ease-out' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                  <div>
-                    <label className="settings-list-label">Nome de Identificação</label>
-                    <input 
-                      className="settings-input-modern" 
-                      value={name} 
-                      onChange={e => setName(e.target.value)} 
-                      placeholder="Ex: Notificação Slack Vendas" 
-                    />
-                  </div>
+            <div style={{ height: '1px', background: 'var(--border-primary)', margin: '20px 0' }} />
 
-                  <div>
-                    <label className="settings-list-label">URL de Destino (Endpoint)</label>
-                    <input 
-                      className="settings-input-modern" 
-                      type="url" 
-                      value={url} 
-                      onChange={e => setUrl(e.target.value)} 
-                      placeholder="https://sua-api.com/webhook" 
-                      style={{ fontFamily: 'var(--font-dm-mono)' }}
-                    />
-                  </div>
-                </div>
-
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
                 <div>
-                  <label className="settings-list-label">Secret de Verificação (Header X-Webhook-Secret)</label>
-                  <input 
-                    className="settings-input-modern" 
-                    value={secret} 
-                    onChange={e => setSecret(e.target.value)} 
-                    placeholder="Deixe em branco para ignorar" 
+                  <label className="settings-list-label">Nome de Identificação</label>
+                  <input
+                    className="settings-input-modern"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Ex: Notificação Slack Vendas"
                   />
-                  <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '8px' }}>
-                    Recomendado para validar que a requisição partiu originalmente dos nossos servidores.
-                  </p>
                 </div>
-
                 <div>
-                  <label className="settings-list-label">Eventos a Notificar</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '8px' }}>
-                    {ALL_EVENTS.map(ev => (
-                      <label key={ev} className={`event-checkbox-card ${selectedEvents.includes(ev) ? 'active' : ''}`} style={{
-                        display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
-                        padding: '12px 16px', borderRadius: '12px', border: '1.5px solid var(--border-secondary)',
-                        transition: 'all 0.2s ease',
-                        background: selectedEvents.includes(ev) ? 'var(--primary-lighter)' : 'transparent',
-                        borderColor: selectedEvents.includes(ev) ? 'var(--primary)' : 'var(--border-secondary)',
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedEvents.includes(ev)}
-                          style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: 'var(--primary)' }}
-                          onChange={e => setSelectedEvents(prev => e.target.checked ? [...prev, ev] : prev.filter(x => x !== ev))}
-                        />
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{EVENT_LABELS[ev]}</div>
-                          <code style={{ fontSize: '10px', color: 'var(--text-tertiary)', opacity: 0.7 }}>{ev}</code>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {formError && (
-                  <div className="settings-error-alert">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    {formError}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={handleCreate} 
-                    disabled={creating}
-                    style={{ flex: 1, height: '48px' }}
-                  >
-                    {creating ? 'Salvando...' : 'Salvar Webhook'}
-                  </button>
-                  <button 
-                    className="btn btn-ghost" 
-                    onClick={() => setShowForm(false)}
-                    style={{ height: '48px', padding: '0 24px', border: '1.5px solid var(--border-secondary)' }}
-                  >
-                    Cancelar
-                  </button>
+                  <label className="settings-list-label">URL de Destino (Endpoint)</label>
+                  <input
+                    className="settings-input-modern"
+                    type="url"
+                    value={url}
+                    onChange={e => setUrl(e.target.value)}
+                    placeholder="https://sua-api.com/webhook"
+                    style={{ fontFamily: 'var(--font-dm-mono)' }}
+                  />
                 </div>
               </div>
+
+              <div>
+                <label className="settings-list-label">Secret de Verificação <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>(opcional)</span></label>
+                <input
+                  className="settings-input-modern"
+                  value={secret}
+                  onChange={e => setSecret(e.target.value)}
+                  placeholder="Header X-Webhook-Secret — deixe em branco para ignorar"
+                />
+              </div>
+
+              <div>
+                <label className="settings-list-label">Eventos a Notificar</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                  {ALL_EVENTS.map(ev => (
+                    <label key={ev} style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
+                      padding: '12px 16px', borderRadius: '12px', transition: 'all 0.15s ease',
+                      border: `1.5px solid ${selectedEvents.includes(ev) ? 'var(--primary)' : 'var(--border-secondary)'}`,
+                      background: selectedEvents.includes(ev) ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'var(--bg-tertiary)',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedEvents.includes(ev)}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }}
+                        onChange={e => setSelectedEvents(prev => e.target.checked ? [...prev, ev] : prev.filter(x => x !== ev))}
+                      />
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{EVENT_LABELS[ev]}</div>
+                        <code style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{ev}</code>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {formError && (
+                <div style={{ fontSize: '13px', color: '#ef4444', padding: '10px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  {formError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ height: '44px', padding: '0 28px' }}>
+                  {creating ? 'Salvando...' : 'Salvar Webhook'}
+                </button>
+                <button className="btn btn-ghost" onClick={() => { setShowForm(false); setFormError('') }} style={{ height: '44px', padding: '0 20px' }}>
+                  Cancelar
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div style={{ marginTop: '40px', marginBottom: '16px' }}>
           <h2 className="settings-section-title">Webhooks Configurados</h2>

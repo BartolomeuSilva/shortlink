@@ -111,21 +111,15 @@ export default function DomainsPage() {
         {/* Add domain card */}
         <div className="settings-action-card">
           <div className="settings-action-header">
-            <div className="settings-action-icon" style={{ background: 'var(--primary-lighter)', color: 'var(--primary)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
-              </svg>
-            </div>
-            <div className="settings-action-info">
-              <h3 className="settings-action-title">Adicionar Novo Domínio</h3>
-              <p className="settings-action-description">Conecte seu domínio para dar mais autoridade aos seus links.</p>
-            </div>
+            <h3 className="settings-action-title">Adicionar Novo Domínio</h3>
+            <p className="settings-action-description">Conecte seu domínio para dar mais autoridade aos seus links.</p>
+            {error && (
+              <div style={{ marginTop: '12px', fontSize: '13px', color: '#ef4444', padding: '10px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>
+            )}
           </div>
-          
-          <div className="settings-input-group">
-            <div className="settings-input-wrapper">
+
+          <div className="settings-action-form">
+            <div className="settings-input-group-modern" style={{ minWidth: '240px' }}>
               <input
                 type="text"
                 value={input}
@@ -139,22 +133,11 @@ export default function DomainsPage() {
               onClick={handleAdd}
               disabled={adding || !input.trim()}
               className="btn btn-primary"
-              style={{ height: '48px', padding: '0 24px' }}
+              style={{ height: '48px', padding: '0 24px', flexShrink: 0 }}
             >
               {adding ? 'Adicionando...' : 'Adicionar'}
             </button>
           </div>
-
-          {error && (
-            <div className="settings-error-alert" style={{ marginTop: '16px' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              {error}
-            </div>
-          )}
         </div>
 
         <div style={{ marginTop: '40px', marginBottom: '16px' }}>

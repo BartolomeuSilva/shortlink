@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { useTopbar } from '@/components/layout/Topbar'
 
 type Step = 'idle' | 'setup' | 'verify' | 'backup' | 'disable'
 
@@ -16,6 +16,13 @@ export default function SecurityPage() {
   const [backupCodes, setBackupCodes] = useState<string[]>([])
   const [copied, setCopied] = useState(false)
   const [qrSrc, setQrSrc] = useState('')
+  const topbar = useTopbar()
+
+  useEffect(() => {
+    topbar.setTitle('Segurança')
+    topbar.setSubtitle('Proteja sua conta com autenticação de dois fatores')
+    topbar.setActions(null)
+  }, [topbar])
 
   useEffect(() => {
     fetch('/api/user/2fa')
@@ -83,165 +90,184 @@ export default function SecurityPage() {
 
   return (
     <div className="page-content">
-      <PageHeader
-        title="Segurança"
-        subtitle="Mantenha sua conta protegida com autenticação de dois fatores"
-      />
-
       <div className="settings-container">
-        
-        {/* 2FA Summary Card */}
-        <div className="security-card">
-          <div className="security-header">
-            <div className="flex items-center gap-4">
-              <div className={`security-icon-box ${enabled ? 'security-badge-success' : 'security-badge-warning'}`}>
-                <svg width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+
+        {/* Card 2FA Status */}
+        <div className="settings-info-list" style={{ marginBottom: '24px' }}>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: enabled ? 'color-mix(in srgb, #22c55e 10%, transparent)' : 'color-mix(in srgb, #f59e0b 10%, transparent)',
+                color: enabled ? '#22c55e' : '#f59e0b',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
                   <path d="M7 11V7a5 5 0 0110 0v4" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-bold text-primary">
+                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
                   Autenticação de Dois Fatores (2FA)
-                </h3>
-                <div className={`security-status-text ${enabled ? 'text-green-500' : 'text-orange-500'}`}>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: enabled ? '#22c55e' : '#f59e0b' }}>
                   {enabled ? 'Proteção Ativada' : 'Proteção Desativada'}
                 </div>
               </div>
             </div>
-            {enabled ? (
-              <button className="btn btn-ghost text-red-500 font-medium" onClick={() => { setStep('disable'); setError('') }}>
-                Desativar
-              </button>
-            ) : (
-              <button className="btn btn-primary h-10 px-6" onClick={() => setStep('setup')}>
-                Configurar
-              </button>
+            {step === 'idle' && (
+              enabled ? (
+                <button className="btn btn-ghost" onClick={() => { setStep('disable'); setError('') }}
+                  style={{ height: '36px', padding: '0 16px', fontSize: '13px', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  Desativar
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => setStep('setup')}
+                  style={{ height: '36px', padding: '0 20px', fontSize: '13px' }}>
+                  Configurar
+                </button>
+              )
             )}
           </div>
 
-          {/* SETUP STEP */}
+          {/* SETUP — QR Code */}
           {step === 'setup' && !enabled && (
-            <div className="security-setup-box">
-              <p className="text-sm text-secondary mb-6 leading-relaxed">
-                Proteja sua conta adicionando uma camada extra de segurança. Escaneie o QR Code abaixo com seu app autenticador (Google Authenticator, Authy, etc).
+            <div style={{ borderTop: '1px solid var(--border-primary)', padding: '24px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
+                Escaneie o QR Code com seu app autenticador (Google Authenticator, Authy, etc) ou insira a chave manualmente.
               </p>
-              
-              <div className="flex gap-8 items-center flex-wrap">
-                <div className="security-qr-container">
-                  {qrSrc && <img src={qrSrc} alt="2FA QR Code" />}
-                </div>
-                
-                <div className="flex-1 min-w-[240px]">
-                  <div className="text-[10px] font-bold text-tertiary uppercase tracking-widest mb-2">
-                    Chave Manual
+              <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {qrSrc && (
+                  <div style={{ padding: '12px', background: 'white', borderRadius: '12px', flexShrink: 0 }}>
+                    <img src={qrSrc} alt="2FA QR Code" width={176} height={176} style={{ display: 'block' }} />
                   </div>
-                  <div className="px-5 py-4 bg-primary/5 rounded-2xl border border-primary/10 font-mono text-sm tracking-widest text-primary break-all">
+                )}
+                <div style={{ flex: 1, minWidth: '220px' }}>
+                  <div className="settings-label" style={{ marginBottom: '8px' }}>Chave Manual</div>
+                  <div style={{
+                    padding: '14px 16px', borderRadius: '12px',
+                    background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--primary)',
+                    letterSpacing: '2px', wordBreak: 'break-all', lineHeight: 1.6,
+                  }}>
                     {secret}
                   </div>
-                  <button className="btn btn-primary mt-6 w-full h-11" onClick={() => setStep('verify')}>
-                    Próximo Passo
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <button className="btn btn-ghost" onClick={() => setStep('idle')} style={{ flex: 1, height: '42px', fontSize: '13px' }}>
+                      Cancelar
+                    </button>
+                    <button className="btn btn-primary" onClick={() => setStep('verify')} style={{ flex: 2, height: '42px', fontSize: '13px' }}>
+                      Próximo Passo →
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* VERIFY STEP */}
+          {/* VERIFY — Código */}
           {step === 'verify' && !enabled && (
-            <div className="security-setup-box">
-              <h4 className="text-sm font-bold text-primary mb-2">
-                Verificação de Código
-              </h4>
-              <p className="text-sm text-secondary mb-4">
-                Insira o código de 6 dígitos que aparece no seu aplicativo:
+            <div style={{ borderTop: '1px solid var(--border-primary)', padding: '24px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>Verificar código</div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Insira o código de 6 dígitos gerado pelo seu aplicativo autenticador.
               </p>
-
               <input
                 type="text"
-                className="security-otp-input mx-auto"
+                inputMode="numeric"
                 placeholder="000 000"
                 maxLength={6}
                 value={token}
                 onChange={e => { setToken(e.target.value.replace(/\D/g, '')); setError('') }}
+                style={{
+                  display: 'block', width: '100%', maxWidth: '200px',
+                  height: '56px', textAlign: 'center',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '24px', letterSpacing: '6px',
+                  border: `2px solid ${error ? '#ef4444' : 'var(--border-primary)'}`,
+                  borderRadius: '12px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
+                  outline: 'none', marginBottom: '8px',
+                }}
               />
-
-              {error && (
-                <div className="text-center text-sm text-red-500 font-semibold mb-6">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button className="btn btn-ghost flex-1 h-11" onClick={() => setStep('setup')}>Voltar</button>
-                <button 
-                  className="btn btn-primary flex-[2] h-11" 
-                  disabled={submitting || token.length !== 6}
-                  onClick={handleEnable}
-                >
-                  {submitting ? 'Verificando...' : 'Ativar Agora'}
+              {error && <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '16px' }}>{error}</div>}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                <button className="btn btn-ghost" onClick={() => setStep('setup')} style={{ flex: 1, height: '42px', fontSize: '13px' }}>
+                  Voltar
+                </button>
+                <button className="btn btn-primary" onClick={handleEnable} disabled={submitting || token.length !== 6} style={{ flex: 2, height: '42px', fontSize: '13px' }}>
+                  {submitting ? 'Verificando...' : 'Ativar 2FA'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* BACKUP CODES STEP */}
+          {/* BACKUP CODES */}
           {step === 'backup' && (
-            <div className="security-setup-box bg-green-500/5 border-t border-green-500/10">
-              <div className="flex items-center gap-3 text-green-500 mb-4">
-                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <div style={{ borderTop: '1px solid color-mix(in srgb, #22c55e 20%, transparent)', padding: '24px', background: 'color-mix(in srgb, #22c55e 4%, transparent)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </div>
-                <span className="font-bold text-lg">2FA Ativado com sucesso!</span>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#22c55e' }}>2FA ativado com sucesso!</span>
               </div>
-              
-              <p className="text-sm text-secondary mb-6 leading-relaxed">
-                Guarde estes códigos de backup em um local seguro. Se você perder seu celular, eles serão a única forma de recuperar o acesso à sua conta.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.6 }}>
+                Guarde estes códigos de backup em um local seguro. Se você perder o acesso ao seu autenticador, eles serão a única forma de recuperar sua conta.
               </p>
-
-              <div className="security-backup-grid">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px', marginBottom: '20px' }}>
                 {backupCodes.map(code => (
-                  <div key={code} className="security-backup-item">{code}</div>
+                  <div key={code} style={{
+                    padding: '10px 14px', borderRadius: '10px', textAlign: 'center',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '13px', fontWeight: 600,
+                    color: 'var(--text-primary)', background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-secondary)', letterSpacing: '1px',
+                  }}>
+                    {code}
+                  </div>
                 ))}
               </div>
-
-              <button className="btn btn-primary w-full h-11 mt-2" onClick={copyBackupCodes}>
-                {copied ? '✓ Códigos Copiados!' : 'Copiar Todos os Códigos'}
+              <button className="btn btn-ghost" onClick={copyBackupCodes} style={{ width: '100%', height: '42px', fontSize: '13px', border: '1px solid var(--border-secondary)' }}>
+                {copied ? '✓ Códigos copiados!' : 'Copiar todos os códigos'}
               </button>
             </div>
           )}
 
-          {/* DISABLE STEP */}
+          {/* DISABLE */}
           {step === 'disable' && enabled && (
-            <div className="security-setup-box bg-red-500/5 border-t border-red-500/10">
-              <h4 className="text-sm font-bold text-red-500 mb-2">
-                Desativar Segurança 2FA
-              </h4>
-              <p className="text-sm text-secondary mb-4">
-                Por segurança, insira o código atual do seu aplicativo autenticador:
+            <div style={{ borderTop: '1px solid color-mix(in srgb, #ef4444 20%, transparent)', padding: '24px', background: 'color-mix(in srgb, #ef4444 4%, transparent)' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: '#ef4444', marginBottom: '6px' }}>Desativar 2FA</div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Insira o código atual do seu aplicativo autenticador para confirmar.
               </p>
-
               <input
                 type="text"
-                className="security-otp-input mx-auto border-red-500/20"
+                inputMode="numeric"
                 placeholder="000 000"
                 maxLength={6}
                 value={token}
                 onChange={e => { setToken(e.target.value.replace(/\D/g, '')); setError('') }}
+                style={{
+                  display: 'block', width: '100%', maxWidth: '200px',
+                  height: '56px', textAlign: 'center',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '24px', letterSpacing: '6px',
+                  border: `2px solid ${error ? '#ef4444' : 'rgba(239,68,68,0.3)'}`,
+                  borderRadius: '12px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
+                  outline: 'none', marginBottom: '8px',
+                }}
               />
-
-              {error && (
-                <div className="text-center text-sm text-red-500 font-semibold mb-6">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button className="btn btn-ghost flex-1 h-11" onClick={() => setStep('idle')}>Cancelar</button>
-                <button 
-                  className="btn btn-primary flex-[2] h-11 bg-red-500 border-red-500 hover:bg-red-600" 
-                  disabled={submitting || token.length !== 6}
+              {error && <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{error}</div>}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                <button className="btn btn-ghost" onClick={() => { setStep('idle'); setError(''); setToken('') }} style={{ flex: 1, height: '42px', fontSize: '13px' }}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn"
                   onClick={handleDisable}
+                  disabled={submitting || token.length !== 6}
+                  style={{ flex: 2, height: '42px', fontSize: '13px', background: '#ef4444', color: 'white', border: 'none' }}
                 >
                   {submitting ? 'Desativando...' : 'Confirmar Desativação'}
                 </button>
@@ -250,16 +276,14 @@ export default function SecurityPage() {
           )}
         </div>
 
-        {/* Security Info Footer */}
-        <div className="mt-8 p-6 rounded-2xl bg-primary/5 border border-primary/10 flex gap-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
+        {/* Hint */}
+        <div className="settings-hint">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <div className="settings-hint-text">
+            O <strong>2FA</strong> é a forma mais eficaz de proteger sua conta contra acessos não autorizados. Recomendamos manter esta opção sempre ativa.
           </div>
-          <p className="text-sm text-secondary leading-relaxed">
-            O <strong>2FA (Autenticação de Dois Fatores)</strong> é a forma mais eficaz de proteger a sua conta contra acessos não autorizados. Recomendamos manter esta opção sempre ativa.
-          </p>
         </div>
 
       </div>
