@@ -2891,7 +2891,7 @@ footer {
 .dash-period-toggle {
   display: flex;
   background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border-secondary);
   border-radius: 12px;
   padding: 3px;
   gap: 2px;
@@ -2980,6 +2980,37 @@ footer {
   padding: 3px 8px;
   border-radius: 99px;
   background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--border-primary);
+}
+
+.dash-metric-badge.positive {
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  color: #16a34a;
+  border-color: color-mix(in srgb, #22c55e 25%, transparent);
+}
+
+[data-theme="dark"] .dash-metric-badge.positive {
+  color: #4ade80;
+}
+
+.dash-metric-badge.negative {
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: #dc2626;
+  border-color: color-mix(in srgb, #ef4444 25%, transparent);
+}
+
+[data-theme="dark"] .dash-metric-badge.negative {
+  color: #f87171;
+}
+
+.dash-metric-badge.neutral {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  border-color: var(--border-primary);
 }
 
 .dash-metric-value {
@@ -3085,6 +3116,87 @@ footer {
   width: 100%;
 }
 
+/* CARD HEADER (GeoStats, DeviceStats) */
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+/* EMPTY STATES */
+.dash-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-empty-icon {
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+/* SECTION HEADER LAYOUT */
+.dash-header-left {
+  flex: 1 1;
+}
+
+.dash-section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* SECTION BADGE (e.g. "30 dias" pill) */
+.dash-section-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* STAT MINI (avg per day in chart header) */
+.dash-stat-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.dash-stat-mini-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: -0.5px;
+}
+
+.dash-stat-mini-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* LINK LIST ARROW */
+.dash-link-arrow {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
 /* BARS (Geo) */
 .dash-bars {
   display: flex;
@@ -3158,7 +3270,7 @@ footer {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  border: 3px solid var(--bg-tertiary);
+  border: 3px solid var(--border-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
