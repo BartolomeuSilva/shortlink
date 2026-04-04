@@ -52,20 +52,19 @@ export function RecentLinks({ links, onCreateLink }: RecentLinksProps) {
         </div>
 
         {links.length === 0 ? (
-          <div className="dash-empty-large">
-            <div className="dash-empty-glow" />
-            <svg className="dash-empty-svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-            <h4 className="dash-empty-title">Nenhum link ainda</h4>
-            <p className="dash-empty-desc">Crie seu primeiro link encurtado e comece a rastrear cliques.</p>
-            <button onClick={onCreateLink} className="dash-empty-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
+          <div style={{ padding: '40px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-tertiary)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
-              Criar primeiro link
+            </div>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Nenhum link ainda</p>
+              <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Crie seu primeiro link encurtado e comece a rastrear cliques.</p>
+            </div>
+            <button onClick={onCreateLink} className="btn btn-primary" style={{ fontSize: '13px', height: '36px', marginTop: '4px' }}>
+              + Criar primeiro link
             </button>
           </div>
         ) : (

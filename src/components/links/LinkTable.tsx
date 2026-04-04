@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatNumber, getBaseUrl } from '@/lib/utils'
@@ -31,6 +31,11 @@ interface LinkTableProps {
 export function LinkTable({ links: initialLinks, total, page, pageSize }: LinkTableProps) {
   const router = useRouter()
   const [links, setLinks] = useState(initialLinks)
+
+  useEffect(() => {
+    setLinks(initialLinks)
+  }, [initialLinks])
+
   const [showModal, setShowModal] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')

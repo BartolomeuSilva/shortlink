@@ -52,7 +52,7 @@ export function LayoutShell({ user, children }: LayoutShellProps) {
           </svg>
         </button>
         <Link href="/dashboard" className="mobile-topbar-logo">
-          <div className="sidebar-logo-icon" style={{ width: '24px', height: '24px', fontSize: '11px' }}>1</div>
+
           <span>123<span style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>bit</span></span>
         </Link>
         <ThemeToggle />

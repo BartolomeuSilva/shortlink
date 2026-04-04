@@ -1,7 +1,8 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, Suspense } from 'react'
+import React, { createContext, useContext, useState, useEffect, Suspense, startTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 
 interface Workspace {
   id: string
@@ -62,7 +63,10 @@ function WorkspaceProviderInner({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const { status } = useSession()
+
   useEffect(() => {
+    if (status !== 'authenticated') return
     refreshWorkspaces().then(() => {
       const saved = localStorage.getItem('activeWorkspace')
       if (saved) {
@@ -73,12 +77,12 @@ function WorkspaceProviderInner({ children }: { children: React.ReactNode }) {
         }
       }
     })
-  }, [])
+  }, [status])
 
   const setActiveWorkspace = (ws: Workspace | null) => {
     setActiveWorkspaceState(ws)
     const params = new URLSearchParams(searchParams.toString())
-    
+
     if (ws) {
       localStorage.setItem('activeWorkspace', JSON.stringify(ws))
       params.set('workspaceId', ws.id)
@@ -86,9 +90,12 @@ function WorkspaceProviderInner({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('activeWorkspace')
       params.delete('workspaceId')
     }
-    
-    router.push(`${pathname}?${params.toString()}`)
-    router.refresh()
+
+    const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    startTransition(() => {
+      router.push(url)
+      router.refresh()
+    })
   }
 
   return (
