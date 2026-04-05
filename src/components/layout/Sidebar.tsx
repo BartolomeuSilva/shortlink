@@ -96,6 +96,11 @@ const supportItems = [
     href: '/help',
     icon: <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
   },
+  {
+    label: 'Documentação da API',
+    href: '/docs/api',
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>,
+  },
 ]
 
 export function Sidebar({ user: serverUser, isOpen, collapsed, onClose, onToggleCollapse }: SidebarProps) {
