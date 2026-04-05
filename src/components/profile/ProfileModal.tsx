@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { signOut } from 'next-auth/react'
 
 interface ProfileModalProps {
   user: {
@@ -15,7 +14,10 @@ interface ProfileModalProps {
 
 export function ProfileModal({ user, onClose, onProfileUpdate }: ProfileModalProps) {
   const [name, setName] = useState(user.name || '')
-  const [avatarSrc, setAvatarSrc] = useState(user.image || '')
+  // Only use the stored image if it's an absolute URL (Supabase), not a local path
+  const isValidImage = (src: string | null | undefined) =>
+    !!src && (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:'))
+  const [avatarSrc, setAvatarSrc] = useState(isValidImage(user.image) ? user.image! : '')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -261,21 +263,6 @@ export function ProfileModal({ user, onClose, onProfileUpdate }: ProfileModalPro
             </div>
           )}
 
-          {/* Logout */}
-          <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-primary)', paddingTop: '16px' }}>
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="btn btn-ghost"
-              style={{ width: '100%', justifyContent: 'center', color: 'var(--color-error)' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              Sair da conta
-            </button>
-          </div>
         </div>
       </div>
     </div>

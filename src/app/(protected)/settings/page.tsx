@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { ProfileCard } from './ProfileCard'
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -17,7 +18,6 @@ export default async function SettingsPage() {
 
   const memberSince = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(user.createdAt))
   const linksCount = user.links?.[0]?.count || 0
-  const initials = (user.name || user.email || '?').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
 
   const settingsLinks = [
     {
@@ -80,31 +80,12 @@ export default async function SettingsPage() {
       <div className="settings-container">
 
         {/* Profile Card */}
-        <div className="settings-profile-card">
-          <div className="settings-avatar-big">
-            {user.image ? (
-              <img src={user.image} alt={user.name || ''} />
-            ) : initials}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.02em' }}>
-              {user.name || 'Usuário'}
-            </div>
-            <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.email}
-            </div>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center',
-              padding: '3px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
-              letterSpacing: '0.5px', textTransform: 'uppercase',
-              background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
-              color: 'var(--primary)',
-              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
-            }}>
-              {user.plan}
-            </span>
-          </div>
-        </div>
+        <ProfileCard
+          fallbackName={user.name || ''}
+          fallbackEmail={user.email || ''}
+          fallbackImage={user.image || null}
+          plan={user.plan}
+        />
 
         {/* Account Details */}
         <div className="settings-info-list">

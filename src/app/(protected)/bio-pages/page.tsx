@@ -60,7 +60,7 @@ export default function BioPagesList() {
   }
 
   return (
-    <div className="bio-page">
+    <div className="page-content" style={{ alignItems: 'stretch' }}>
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Carregando suas bios...</div>
       ) : bios.length === 0 ? (

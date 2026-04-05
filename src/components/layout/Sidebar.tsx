@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ProfileModal } from '@/components/profile/ProfileModal'
 import { useWorkspace } from '@/components/theme/WorkspaceContext'
 
 interface SidebarUser {
@@ -18,7 +17,6 @@ interface SidebarProps {
   collapsed?: boolean
   onClose?: () => void
   onToggleCollapse?: () => void
-  onProfileUpdate?: (patch: { name?: string; image?: string }) => void
 }
 
 const navItems = [
@@ -92,17 +90,20 @@ const settingsItems = [
   },
 ]
 
-export function Sidebar({ user, isOpen, collapsed, onClose, onToggleCollapse, onProfileUpdate }: SidebarProps) {
+const supportItems = [
+  {
+    label: 'Ajuda',
+    href: '/help',
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="1.5" fill="none" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+  },
+]
+
+export function Sidebar({ user: serverUser, isOpen, collapsed, onClose, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname()
-  const [profileOpen, setProfileOpen] = useState(false)
   const { activeWorkspace, setActiveWorkspace, workspaces } = useWorkspace()
   const [showWorkspaceSelector, setShowWorkspaceSelector] = useState(false)
 
   const isActive = (href: string) => pathname === href
-
-  const initials = user.name
-    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-    : user.email?.[0]?.toUpperCase() || '?'
 
   return (
     <>
@@ -248,40 +249,27 @@ export function Sidebar({ user, isOpen, collapsed, onClose, onToggleCollapse, on
             </Link>
           )
         })}
+
+        <div className="sidebar-divider" />
+
+        {supportItems.map((item) => {
+          const active = isActive(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`sidebar-link ${active ? 'active' : ''}`}
+              title={collapsed ? item.label : undefined}
+              onClick={onClose}
+            >
+              <span className="sidebar-link-icon">{item.icon}</span>
+              <span className="sidebar-link-label">{item.label}</span>
+            </Link>
+          )
+        })}
       </nav>
 
-      {/* USER CARD */}
-      <div className="sidebar-user">
-        <div
-          className="sidebar-user-card"
-          onClick={() => setProfileOpen(true)}
-          title={collapsed ? (user.name || user.email || 'Perfil') : 'Ver perfil'}
-        >
-          <div className="sidebar-user-avatar">
-            {user.image ? (
-              <img src={user.image} alt={user.name || ''} />
-            ) : initials}
-          </div>
-          <div className="sidebar-user-info">
-            <div className="sidebar-user-name">
-              {user.name || user.email?.split('@')[0]}
-            </div>
-            <div className="sidebar-user-plan">
-              Plano Gratuito
-              <span className="sidebar-user-badge">FREE</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </aside>
-
-    {profileOpen && (
-      <ProfileModal
-        user={user}
-        onClose={() => setProfileOpen(false)}
-        onProfileUpdate={onProfileUpdate}
-      />
-    )}
   </>
   )
 }
