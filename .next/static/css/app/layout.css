@@ -6673,3 +6673,142 @@ footer {
     padding: 8px 6px;
   }
 }
+
+/* ============================================
+   TERMS PAGE
+   ============================================ */
+
+.terms-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--bg-primary);
+}
+
+.terms-container {
+  max-width: 720px;
+  width: 100%;
+}
+
+.terms-header {
+  text-align: center;
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.terms-header h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.terms-updated {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.terms-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.terms-content section {
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.terms-content section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.terms-content h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+
+.terms-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+
+.terms-content p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.terms-content p:last-child {
+  margin-bottom: 0;
+}
+
+.terms-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.terms-content ul li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.terms-content ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.terms-content ul li strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .terms-page {
+    padding: 24px 16px;
+  }
+
+  .terms-header h1 {
+    font-size: 24px;
+  }
+
+  .terms-content h2 {
+    font-size: 18px;
+  }
+
+  .terms-content h3 {
+    font-size: 15px;
+  }
+
+  .terms-content p,
+  .terms-content ul li {
+    font-size: 14px;
+  }
+}
