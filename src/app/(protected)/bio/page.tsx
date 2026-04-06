@@ -20,6 +20,7 @@ interface BioPage {
   slug: string
   title: string | null
   bio: string | null
+  profileImage: string | null
   theme: string
   accentColor: string
   published: boolean
@@ -46,9 +47,11 @@ export default function BioEditorPage() {
   const [slugField, setSlugField] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [bioText, setBioText] = useState('')
+  const [profileImage, setProfileImage] = useState('')
   const [theme, setTheme] = useState('dark')
   const [accentColor, setAccentColor] = useState('#8B5CF6')
   const [published, setPublished] = useState(true)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const [newLabel, setNewLabel] = useState('')
   const [newUrl, setNewUrl] = useState('')
@@ -68,6 +71,7 @@ export default function BioEditorPage() {
         setSlugField(d.bio.slug || '')
         setDisplayName(d.bio.title || '')
         setBioText(d.bio.bio || '')
+        setProfileImage(d.bio.profileImage || '')
         setTheme(d.bio.theme || 'dark')
         setAccentColor(d.bio.accentColor || '#8B5CF6')
         setPublished(d.bio.published ?? true)
@@ -98,6 +102,7 @@ export default function BioEditorPage() {
           slug: slugField.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
           title: displayName.trim() || null,
           bio: bioText.trim() || null,
+          profileImage: profileImage.trim() || null,
           theme,
           accentColor,
           published,
@@ -171,6 +176,26 @@ export default function BioEditorPage() {
       })
       setBio(prev => prev ? { ...prev, items: prev.items.map(i => i.id === itemId ? { ...i, active: !current } : i) } : prev)
     } catch {}
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const bioIdParam = bio?.id ? `?bioId=${bio.id}` : ''
+      const res = await fetch(`/api/bio/profile-image${bioIdParam}`, { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Erro ao enviar imagem'); return }
+      setProfileImage(data.imageUrl)
+    } catch {
+      setError('Erro ao enviar imagem')
+    } finally {
+      setUploadingImage(false)
+      if (e.target) e.target.value = ''
+    }
   }
 
   const bioUrl = bio ? `${typeof window !== 'undefined' ? window.location.origin : ''}/b/${bio.slug}` : null
@@ -247,6 +272,71 @@ export default function BioEditorPage() {
                     fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--text-primary)', padding: '0 12px',
                   }}
                 />
+              </div>
+            </div>
+
+            {/* Profile Image */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border-primary)' }}>
+              <label className="settings-list-label">Imagem do Perfil</label>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '16px',
+                padding: '16px', borderRadius: '10px',
+                border: '1px dashed var(--border-primary)',
+                background: 'var(--bg-tertiary)',
+              }}>
+                <div
+                  onClick={() => document.getElementById('bio-profile-image-input')?.click()}
+                  style={{
+                    width: '56px', height: '56px', borderRadius: '50%', flexShrink: 0,
+                    background: accentColor, overflow: 'hidden', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '20px', fontWeight: 600, color: '#fff',
+                    position: 'relative', border: `3px solid ${accentColor}`,
+                  }}
+                >
+                  {profileImage ? (
+                    <img src={profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    displayInitial
+                  )}
+                  {uploadingImage && (
+                    <div style={{
+                      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" stroke="white" strokeWidth="3" fill="none" className="profile-spinner">
+                        <path d="M21 12a9 9 0 11-6.219-8.56" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <input
+                  id="bio-profile-image-input"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageUpload}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {uploadingImage ? 'Enviando imagem...' : profileImage ? 'Imagem definida' : 'Clique para enviar'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                    JPG, PNG ou WebP — máx. 5MB
+                  </div>
+                </div>
+                {profileImage && !uploadingImage && (
+                  <button
+                    onClick={() => setProfileImage('')}
+                    style={{
+                      padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-primary)',
+                      background: 'transparent', color: 'var(--text-tertiary)', fontSize: '12px',
+                      cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                    }}
+                  >
+                    Remover
+                  </button>
+                )}
               </div>
             </div>
 
@@ -474,9 +564,15 @@ export default function BioEditorPage() {
 
         {/* RIGHT: PHONE PREVIEW */}
         <div className="bio-phone-wrapper">
-          <div className={`bio-phone theme-${theme}`}>
-            <div className="bio-phone-notch" />
-            <div className="bio-phone-avatar" style={{ background: accentColor }}>{displayInitial}</div>
+            <div className={`bio-phone theme-${theme}`}>
+              <div className="bio-phone-notch" />
+              <div className="bio-phone-avatar" style={{ background: accentColor }}>
+                {profileImage ? (
+                  <img src={profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                ) : (
+                  displayInitial
+                )}
+              </div>
             <div className="bio-phone-title">{displayName || (slugField ? `@${slugField}` : 'Seu Nome')}</div>
             <div className="bio-phone-desc">{bioText || 'Escreva algo cativante aqui na sua bio...'}</div>
             

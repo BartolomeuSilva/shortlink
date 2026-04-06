@@ -4,6 +4,8 @@ import BioPageClient from './BioPageClient'
 
 interface Props { params: Promise<{ slug: string }> }
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const { data: bio } = await supabaseAdmin
@@ -36,6 +38,7 @@ export default async function BioPublicPage({ params }: Props) {
     slug: bio.slug,
     title: bio.title,
     bio: bio.bio,
+    profileImage: bio.profileImage,
     theme: bio.theme,
     accentColor: bio.accentColor,
     items: bio.items.map((item: any) => ({

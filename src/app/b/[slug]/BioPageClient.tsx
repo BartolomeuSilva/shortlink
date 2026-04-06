@@ -14,6 +14,7 @@ interface BioData {
   slug: string
   title: string | null
   bio: string | null
+  profileImage: string | null
   theme: string
   accentColor: string
   items: BioItem[]
@@ -58,7 +59,11 @@ export default function BioPageClient({ bio }: { bio: BioData }) {
         overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '28px', fontWeight: 600, color: 'white',
       }}>
-        {(bio.title || bio.slug)[0].toUpperCase()}
+        {bio.profileImage ? (
+          <img src={bio.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          (bio.title || bio.slug)[0].toUpperCase()
+        )}
       </div>
 
       {/* Name */}
@@ -100,7 +105,7 @@ export default function BioPageClient({ bio }: { bio: BioData }) {
 
       {/* Footer */}
       <div style={{ marginTop: '40px', fontSize: '12px', color: subColor, opacity: 0.6 }}>
-        Criado com <span style={{ color: bio.accentColor, fontWeight: 500 }}>123bit</span>
+        Criado com <a href="https://123bit.app" target="_blank" rel="noopener noreferrer" style={{ color: bio.accentColor, fontWeight: 500, textDecoration: 'none' }}>123bit</a>
       </div>
     </div>
   )

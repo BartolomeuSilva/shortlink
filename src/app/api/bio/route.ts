@@ -8,6 +8,7 @@ const pageSchema = z.object({
   slug:        z.string().min(2).max(30).regex(/^[a-z0-9-]+$/, 'Apenas letras minúsculas, números e hífen'),
   title:       z.string().max(80).optional(),
   bio:         z.string().max(200).optional(),
+  profileImage: z.string().url().optional().nullable().or(z.literal('')),
   theme:       z.enum(['dark', 'light', 'purple']).optional().default('dark'),
   accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().default('#8B5CF6'),
   published:   z.boolean().optional().default(true),
@@ -71,21 +72,28 @@ export async function POST(req: NextRequest) {
 
   // Create/update page
   const parsed = pageSchema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+  if (!parsed.success) {
+    console.error('🔴 Zod parse error:', parsed.error.errors)
+    return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+  }
+
+  const normalizedProfileImage = parsed.data.profileImage === '' ? null : parsed.data.profileImage
 
   const { data: existing } = await supabaseAdmin
     .from('BioPage')
-    .select('id, title, bio')
+    .select('id, title, bio, profileImage')
     .eq('userId', session.user.id)
     .eq('slug', parsed.data.slug)
     .maybeSingle()
 
   if (existing) {
-    const { data: bio } = await supabaseAdmin
+    console.log('🔵 Bio update:', { id: existing.id, profileImage: normalizedProfileImage })
+    const { data: bio, error: updateError } = await supabaseAdmin
       .from('BioPage')
       .update({
         title: parsed.data.title ?? existing.title,
         bio: parsed.data.bio ?? existing.bio,
+        profileImage: normalizedProfileImage ?? existing.profileImage,
         theme: parsed.data.theme,
         accentColor: parsed.data.accentColor,
         published: parsed.data.published,
@@ -94,6 +102,8 @@ export async function POST(req: NextRequest) {
       .eq('id', existing.id)
       .select('*, items:BioPageItem(*)')
       .single()
+    if (updateError) console.error('🔴 Bio update error:', updateError)
+    console.log('🟢 Bio updated:', { profileImage: bio?.profileImage })
     return NextResponse.json({ bio })
   }
 
@@ -105,6 +115,7 @@ export async function POST(req: NextRequest) {
       slug: parsed.data.slug,
       title: parsed.data.title || null,
       bio: parsed.data.bio || null,
+      profileImage: normalizedProfileImage || null,
       theme: parsed.data.theme,
       accentColor: parsed.data.accentColor,
       published: parsed.data.published,
